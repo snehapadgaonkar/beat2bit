@@ -1,0 +1,43 @@
+name: Full training (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_records:
+        description: 'Max MIT-BIH records to process (for quick runs)'
+        required: false
+        default: '5'
+      epochs:
+        description: 'Number of training epochs'
+        required: false
+        default: '5'
+
+jobs:
+  full-train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Upgrade pip and install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Download and preprocess MIT-BIH (limited)
+        run: |
+          python data/download_and_preprocess.py --out data --max-records ${{ github.event.inputs.max_records }}
+      - name: Full training
+        run: |
+          python -m src.training.train --full --epochs ${{ github.event.inputs.epochs }}
+      - name: Evaluate model
+        run: |
+          python -m src.training.evaluate
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: beat2bit-artifacts
+          path: |
+            models/saved/
+            experiments/
