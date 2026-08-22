@@ -34,6 +34,9 @@ jobs:
       - name: Evaluate model
         run: |
           python -m src.training.evaluate
+      - name: Quantize model
+        run: |
+          python -m src.training.quantize --model models/saved/baseline.h5 --out models/saved/model_int8.tflite --rep-samples 100
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
