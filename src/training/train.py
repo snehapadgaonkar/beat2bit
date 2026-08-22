@@ -133,12 +133,24 @@ def full_train(epochs=10, batch_size=16):
         print(f"TFLite conversion failed or not available: {e}")
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--full', action='store_true', help='Run full training (requires TensorFlow)')
     parser.add_argument('--epochs', type=int, default=5)
     parser.add_argument('--batch-size', type=int, default=16)
-    args = parser.parse_args()
+
+    # When called from pytest, sys.argv will contain pytest CLI flags which argparse will reject.
+    # Default to smoke mode when running under pytest or when argv is explicitly []
+    if argv is None:
+        import sys
+        import os
+        # Detect pytest run by environment variable or presence of pytest args
+        if os.environ.get('PYTEST_CURRENT_TEST') or any(a.startswith('-') for a in sys.argv[1:]):
+            argv = []
+        else:
+            argv = None
+
+    args = parser.parse_args(argv)
 
     if not args.full:
         smoke()
