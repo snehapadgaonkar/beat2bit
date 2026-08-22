@@ -7,3 +7,4 @@ tensorflow>=2.12.0
 tensorflow-model-optimization
 # Optional (use on-device runtime if building firmware):
 # tflite-runtime
+\nwfdb\nscikit-learn\n
