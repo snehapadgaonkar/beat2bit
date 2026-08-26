@@ -43,3 +43,6 @@ firmware/*.hex
 
 # Other
 *.ckpt
+data/
+node_modules/
+.next/
