@@ -1,12 +1,8 @@
-# Minimal requirements for development and reproducibility
-numpy>=1.24
-scipy
-matplotlib
-pandas
-tensorflow>=2.12.0
-tensorflow-model-optimization
-# Optional (use on-device runtime if building firmware):
-# tflite-runtime
 wfdb
-scikit-learn
-
+numpy
+matplotlib
+scipy
+pandas
+streamlit
+plotly
+jupytext
