@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { SiteHeader, type TabId } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
+import { ChatWidget } from '@/components/ChatWidget';
 import { OverviewSection } from '@/components/sections/OverviewSection';
 import { ResearchSection } from '@/components/sections/ResearchSection';
 import { DashboardSection } from '@/components/sections/DashboardSection';
 import { ModelSection } from '@/components/sections/ModelSection';
 import { DatasetsSection } from '@/components/sections/DatasetsSection';
-import { AgentSection } from '@/components/sections/AgentSection';
 import { loadAllReports } from '@/lib/researchService';
 import type { ReportData } from '@/lib/utils';
 
@@ -68,9 +68,11 @@ export default function Beat2BitWebsite() {
           {activeTab === 'dashboard' && <DashboardSection {...sectionProps} />}
           {activeTab === 'model' && <ModelSection reports={reports} />}
           {activeTab === 'datasets' && <DatasetsSection reports={reports} />}
-          {activeTab === 'agent' && <AgentSection reports={reports} />}
         </div>
       </main>
+
+      {/* Floating Ask Beat2Bit bubble — available on every tab */}
+      <ChatWidget reports={reports} />
 
       <SiteFooter />
     </div>

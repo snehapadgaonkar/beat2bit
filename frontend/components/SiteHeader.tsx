@@ -10,11 +10,10 @@ import {
   Activity,
   Cpu,
   Database,
-  Bot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type TabId = 'overview' | 'research' | 'dashboard' | 'model' | 'datasets' | 'agent';
+export type TabId = 'overview' | 'research' | 'dashboard' | 'model' | 'datasets';
 
 export interface NavItem {
   id: TabId;
@@ -28,7 +27,6 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: Activity },
   { id: 'model', label: 'Model', icon: Cpu },
   { id: 'datasets', label: 'Datasets', icon: Database },
-  { id: 'agent', label: 'AI Agent', icon: Bot },
 ];
 
 export function SiteHeader({
