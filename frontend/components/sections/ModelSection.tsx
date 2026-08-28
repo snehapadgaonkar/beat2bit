@@ -64,38 +64,42 @@ export function ModelSection({ reports }: Props) {
     : { size: 0, params: 0, latency: 0 };
 
   return (
-    <div className="space-y-14 pb-16">
+    <div className="space-y-10 pb-12 sm:space-y-14 sm:pb-16">
+      {/* ── Intro ────────────────────────────────────────────────────────────── */}
       <div className="mx-auto max-w-3xl text-center">
         <p className="text-sm font-semibold uppercase tracking-wider text-rose-500">From Python to silicon</p>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">The Beat2Bit pipeline</h1>
-        <p className="mt-4 text-lg leading-relaxed text-slate-600">
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl sm:text-4xl">
+          The Beat2Bit pipeline
+        </h1>
+        <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
           Four stages take a full-precision deep network to a deployable, ultra-low-power edge model — with measurable
           gains at every step.
         </p>
       </div>
 
-      {/* Impact stats */}
+      {/* ── Impact stats — 1 col → 3 col ────────────────────────────────────── */}
       <div className="grid gap-3 sm:grid-cols-3">
         <ImpactStat label="Model size reduction" value={`${Math.max(0, howMuch.size).toFixed(0)}%`} sub="vs FP32 baseline" />
         <ImpactStat label="Parameter reduction" value={`${Math.max(0, howMuch.params).toFixed(0)}%`} sub="via magnitude pruning" />
         <ImpactStat label="Latency reduction" value={`${Math.max(0, howMuch.latency).toFixed(0)}%`} sub="faster per inference" />
       </div>
 
-      {/* Timeline */}
+      {/* ── Vertical timeline ────────────────────────────────────────────────── */}
       <div className="relative mx-auto max-w-4xl">
-        <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-blue-200 via-purple-200 to-emerald-200" />
-        <div className="space-y-8">
+        {/* Connector line — hidden on very small screens to avoid overlap */}
+        <div className="absolute bottom-0 left-5 top-0 hidden w-px bg-gradient-to-b from-blue-200 via-purple-200 to-emerald-200 sm:block sm:left-6" />
+        <div className="space-y-5 sm:space-y-8">
           {stages.map((s, i) => (
-            <div key={i} className="relative flex gap-5 pl-0">
-              <div className={`z-10 grid h-12 w-12 shrink-0 place-items-center rounded-2xl shadow-sm ${s.color}`}>
-                <s.icon className="h-6 w-6" />
+            <div key={i} className="relative flex gap-3 sm:gap-5">
+              <div className={`z-10 grid h-10 w-10 shrink-0 place-items-center rounded-2xl shadow-sm sm:h-12 sm:w-12 ${s.color}`}>
+                <s.icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <div className="flex-1 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <h3 className="text-lg font-semibold text-slate-900">{s.title}</h3>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{s.metric}</span>
+              <div className="flex-1 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                  <h3 className="text-base font-semibold text-slate-900 sm:text-lg">{s.title}</h3>
+                  <span className="w-max rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{s.metric}</span>
                 </div>
-                <p className="mt-3 leading-relaxed text-slate-600">{s.body}</p>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">{s.body}</p>
               </div>
             </div>
           ))}
@@ -107,10 +111,10 @@ export function ModelSection({ reports }: Props) {
 
 function ImpactStat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-emerald-600">{value}</p>
-      <p className="mt-1 text-xs text-slate-400">{sub}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:p-5">
+      <p className="text-xs text-slate-500 sm:text-sm">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-emerald-600 sm:text-3xl">{value}</p>
+      <p className="mt-1 text-[10px] text-slate-400 sm:text-xs">{sub}</p>
     </div>
   );
 }

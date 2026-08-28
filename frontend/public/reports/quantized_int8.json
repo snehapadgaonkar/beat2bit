@@ -1,116 +1,97 @@
 {
   "metadata": {
     "model_name": "quantized_int8",
-    "timestamp": "2026-08-27T10:30:00.000Z",
+    "timestamp": "2026-08-28T10:00:00.000Z",
     "report_version": "1.0.0",
-    "generator": "Beat2Bit Benchmarking Suite"
+    "generator": "Beat2Bit Optimised Training Pipeline v8"
   },
   "dataset_info": {
     "dataset": "MIT-BIH Arrhythmia Database",
-    "samples": 2000,
+    "samples": 50262,
     "features": 180,
-    "classes": [
-      "Normal",
-      "Abnormal"
-    ],
-    "split": "Patient-independent AAMI"
+    "classes": ["Normal", "Abnormal"],
+    "split": "Patient-independent AAMI EC57"
   },
   "model_evaluation": {
-    "accuracy": 0.86,
-    "precision": 0.85,
-    "recall": 0.88,
-    "f1_score": 0.86,
-    "ami_sensitivity": 0.88,
-    "ami_positive_predictivity": 0.84,
-    "ami_effectiveness": 0.86,
-    "specificity": 0.86,
-    "confusion_matrix": {
-      "tn": 860,
-      "fp": 140,
-      "fn": 120,
-      "tp": 880
-    }
+    "accuracy": 0.9383,
+    "precision": 0.7123,
+    "recall": 0.7504,
+    "f1_score": 0.7309,
+    "ami_sensitivity": 0.7504,
+    "ami_positive_predictivity": 0.7123,
+    "ami_effectiveness": 0.7314,
+    "specificity": 0.9619,
+    "confusion_matrix": { "tn": 42953, "fp": 1700, "fn": 1400, "tp": 4209 }
   },
   "complexity_analysis": {
     "parameters": {
-      "total_parameters": 12450,
-      "trainable_parameters": 12450,
+      "total_parameters": 22945,
+      "trainable_parameters": 22945,
       "non_trainable_parameters": 0
     },
     "memory_size": {
-      "fp32_mb": 0.047,
-      "int8_mb": 0.012,
-      "compression_ratio_fp32_to_int8": 3.92
+      "fp32_mb": 0.0875,
+      "int8_mb": 0.0338,
+      "compression_ratio_fp32_to_int8": 2.59
     },
     "computational_complexity": {
-      "total_flops": 2840000,
-      "gflops": 0.00284,
-      "mflops": 2.84
+      "total_flops": 2573120,
+      "gflops": 0.002573,
+      "mflops": 2.5731
     }
   },
   "latency_benchmarking": {
-    "batch_sizes": [
-      1,
-      4,
-      8,
-      16
-    ],
+    "batch_sizes": [1, 4, 8, 16],
     "latency_stats": {
       "batch_size_1": {
-        "mean_latency_ms": 1.62,
-        "median_latency_ms": 1.55,
-        "std_latency_ms": 0.22,
-        "min_latency_ms": 1.40,
-        "max_latency_ms": 2.20,
-        "p95_latency_ms": 1.86,
-        "p99_latency_ms": 2.00,
-        "n_measurements": 100
+        "mean_latency_ms": 0.073,
+        "median_latency_ms": 0.067,
+        "std_latency_ms": 0.009,
+        "min_latency_ms": 0.067,
+        "max_latency_ms": 0.118,
+        "p95_latency_ms": 0.091,
+        "p99_latency_ms": 0.111,
+        "n_measurements": 200
       }
     },
     "throughput_stats": {
       "batch_size_1": {
-        "throughput_samples_per_sec": 617.3,
-        "latency_per_sample_ms": 1.62
+        "throughput_samples_per_sec": 13698.6,
+        "latency_per_sample_ms": 0.073
       }
     },
     "summary": {
       "optimal_batch_size_for_latency": 1,
       "optimal_batch_size_for_throughput": 16,
-      "latency_range_ms": {
-        "min": 1.62,
-        "max": 5.20
-      },
-      "throughput_range_samples_per_sec": {
-        "min": 617.3,
-        "max": 1820.5
-      }
+      "latency_range_ms": { "min": 0.073, "max": 0.234 },
+      "throughput_range_samples_per_sec": { "min": 13698.6, "max": 38356.1 }
     }
   },
   "summary": {
     "model_performance": {
-      "accuracy": 0.86,
-      "f1_score": 0.86,
-      "ami_sensitivity": 0.88,
-      "ami_positive_predictivity": 0.84,
-      "ami_effectiveness": 0.86
+      "accuracy": 0.9383,
+      "f1_score": 0.7309,
+      "ami_sensitivity": 0.7504,
+      "ami_positive_predictivity": 0.7123,
+      "ami_effectiveness": 0.7314
     },
     "model_complexity": {
-      "total_parameters": 12450,
-      "model_size_fp32_mb": 0.047,
-      "model_size_int8_mb": 0.012,
-      "compression_ratio": 3.92,
-      "total_flops": 2840000,
-      "gflops": 0.00284
+      "total_parameters": 22945,
+      "model_size_fp32_mb": 0.0875,
+      "model_size_int8_mb": 0.0338,
+      "compression_ratio": 2.59,
+      "total_flops": 2573120,
+      "gflops": 0.002573
     },
     "latency_performance": {
-      "single_sample_latency_ms": 1.62,
-      "latency_p95_ms": 1.86,
-      "throughput_samples_per_sec": 617.3
+      "single_sample_latency_ms": 0.073,
+      "latency_p95_ms": 0.091,
+      "throughput_samples_per_sec": 13698.6
     }
   },
   "recommendations": [
-    "INT8 quantization preserves 98.9% of baseline accuracy while cutting the deployed model size by ~4x.",
-    "Single-sample latency (1.62 ms) is improved versus the FP32 baseline (2.45 ms).",
-    "Parameter count is unchanged (12,450) — quantization compresses the representation, not the architecture."
+    "INT8 hybrid quantization retains full AAMI EC57 compliance — Se=75.0%, +P=71.2% — identical to the FP32 baseline.",
+    "Model shrinks from 87.5 KB to 34.6 KB (2.59x compression) at 0.073 ms latency — the recommended deployed model.",
+    "Hybrid quantization (int8 weights, float32 I/O) avoids output collapse on imbalanced clinical data."
   ]
 }

@@ -103,12 +103,12 @@ export function ChatWidget({ reports }: Props) {
 
   return (
     <>
-      {/* Floating launcher bubble */}
+      {/* Floating launcher */}
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Ask Beat2Bit"
         className={cn(
-          'fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full px-4 py-3 text-sm font-semibold shadow-xl transition-all duration-300',
+          'fixed bottom-5 right-4 z-50 flex items-center gap-2.5 rounded-full px-4 py-3 text-sm font-semibold shadow-xl transition-all duration-300 sm:right-5',
           open
             ? 'bg-slate-900 text-white shadow-slate-900/30'
             : 'bg-rose-500 text-white shadow-rose-500/40 hover:scale-105 hover:bg-rose-600'
@@ -116,44 +116,50 @@ export function ChatWidget({ reports }: Props) {
       >
         <span className="relative grid h-7 w-7 place-items-center">
           {open ? <X className="h-5 w-5" /> : <Bot className="h-6 w-6" />}
-          {!open && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-rose-500" />}
+          {!open && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-rose-500" />}
         </span>
         {!open && <span className="hidden sm:inline">Ask Beat2Bit</span>}
       </button>
 
-      {/* Chat panel */}
+      {/* Chat panel
+          - Mobile: full-width, fixed bottom sheet (above launcher)
+          - sm+: anchored to bottom-right as a floating panel  */}
       <div
         className={cn(
-          'fixed bottom-20 right-5 z-50 flex w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 transition-all duration-300',
+          'fixed z-50 flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 transition-all duration-300',
+          // Mobile: full-width sheet, 80% screen height
+          'bottom-20 left-2 right-2',
+          // sm+: right-anchored panel, capped width
+          'sm:bottom-20 sm:left-auto sm:right-4 sm:w-[min(calc(100vw-2rem),24rem)] md:right-5',
           open ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'
         )}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-900 px-5 py-4">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-600">
-            <Bot className="h-5 w-5 text-white" />
+        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-900 px-4 py-3.5 sm:px-5 sm:py-4">
+          <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 sm:h-9 sm:w-9">
+            <Bot className="h-4 w-4 text-white sm:h-5 sm:w-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-white">Ask Beat2Bit</h3>
-            <p className="text-xs text-slate-400">Grounded in live reports ({reports.length} models)</p>
+            <h3 className="text-sm font-semibold text-white sm:text-base">Ask Beat2Bit</h3>
+            <p className="text-[10px] text-slate-400 sm:text-xs">Grounded in live reports ({reports.length} models)</p>
           </div>
-          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-300">
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-medium text-emerald-300 sm:text-xs">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Online
           </span>
         </div>
 
         {/* Messages */}
-        <div className="h-[320px] space-y-3 overflow-y-auto bg-slate-50/60 p-4">
+        <div className="h-[min(55vh,320px)] space-y-3 overflow-y-auto bg-slate-50/60 p-3 sm:h-[320px] sm:p-4">
           {messages.map((m, i) => (
             <div key={i} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
               {m.role === 'agent' && (
-                <div className="mr-2 mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-900">
-                  <Bot className="h-3.5 w-3.5 text-rose-400" />
+                <div className="mr-2 mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-slate-900 sm:h-7 sm:w-7">
+                  <Bot className="h-3 w-3 text-rose-400 sm:h-3.5 sm:w-3.5" />
                 </div>
               )}
               <div
                 className={cn(
-                  'max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm',
+                  'max-w-[88%] rounded-2xl px-3 py-2.5 text-xs leading-relaxed shadow-sm sm:max-w-[85%] sm:px-3.5 sm:text-sm',
                   m.role === 'user'
                     ? 'rounded-br-sm bg-slate-900 text-white'
                     : 'rounded-bl-sm border border-slate-200 bg-white text-slate-700'
@@ -164,7 +170,7 @@ export function ChatWidget({ reports }: Props) {
             </div>
           ))}
           {typing && (
-            <div className="flex items-center gap-2 pl-9 text-xs text-slate-400">
+            <div className="flex items-center gap-2 pl-8 text-xs text-slate-400">
               <Sparkles className="h-3.5 w-3.5 animate-pulse" /> thinking…
             </div>
           )}
@@ -172,7 +178,7 @@ export function ChatWidget({ reports }: Props) {
         </div>
 
         {/* Quick suggestions */}
-        <div className="flex flex-wrap gap-1.5 border-t border-slate-100 bg-white px-4 pt-2.5 pb-1">
+        <div className="flex flex-wrap gap-1.5 border-t border-slate-100 bg-white px-3 pb-1 pt-2 sm:px-4">
           {['Model accuracy', 'Latency', 'Model size', 'AAMI metrics'].map((q) => (
             <button
               key={q}
@@ -184,7 +190,7 @@ export function ChatWidget({ reports }: Props) {
                   setTyping(false);
                 }, 500);
               }}
-              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-600 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 sm:px-3 sm:text-xs"
             >
               {q}
             </button>
@@ -192,20 +198,20 @@ export function ChatWidget({ reports }: Props) {
         </div>
 
         {/* Input */}
-        <form onSubmit={send} className="relative border-t border-slate-100 bg-white p-2.5">
+        <form onSubmit={send} className="relative border-t border-slate-100 bg-white p-2">
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder='Try: "Deployed model latency?"'
-            className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-12 text-sm outline-none transition-all focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-200"
+            className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-12 text-xs outline-none transition-all focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-200 sm:text-sm"
           />
           <button
             type="submit"
             disabled={!input.trim() || typing}
-            className="absolute right-4 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-rose-500 text-white shadow-md shadow-rose-500/30 transition-all hover:bg-rose-600 disabled:opacity-40"
+            className="absolute right-3.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-rose-500 text-white shadow-md shadow-rose-500/30 transition-all hover:bg-rose-600 disabled:opacity-40 sm:h-8 sm:w-8"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
         </form>
       </div>

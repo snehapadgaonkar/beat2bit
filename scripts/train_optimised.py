@@ -303,7 +303,11 @@ def keras_latency(model):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 # 6. TFLite hybrid quantization
+=======
+# 6. TFLite hybrid quantization (int8 weights, float32 I/O — no collapse)
+>>>>>>> 2b7929ec17ef2b91c0a0dc87c5b9bbcde3ebc5b9
 # ─────────────────────────────────────────────────────────────────────────────
 def to_tflite_hybrid(model):
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -368,7 +372,10 @@ def prune_and_recalibrate(base_model, X_bal, y_bal,
                           target_sparsity,
                           prune_epochs=8, recal_epochs=3,
                           batch_size=256, lr=3e-4):
+<<<<<<< HEAD
     # Phase 1: pruning on oversampled data
+=======
+>>>>>>> 2b7929ec17ef2b91c0a0dc87c5b9bbcde3ebc5b9
     prune_lm = tfmot.sparsity.keras.prune_low_magnitude
     n_steps  = int(np.ceil(len(X_bal) * 0.9 / batch_size)) * prune_epochs
     pruned   = prune_lm(base_model,
@@ -384,7 +391,11 @@ def prune_and_recalibrate(base_model, X_bal, y_bal,
         loss="binary_crossentropy",
         metrics=["accuracy"],
     )
+<<<<<<< HEAD
     print("  Phase 1: pruning to %.0f%% sparsity..." % (target_sparsity*100))
+=======
+    print("  Phase 1: pruning to %.0f%% sparsity..." % (target_sparsity * 100))
+>>>>>>> 2b7929ec17ef2b91c0a0dc87c5b9bbcde3ebc5b9
     pruned.fit(
         X_bal, y_bal,
         epochs=prune_epochs,
@@ -395,10 +406,16 @@ def prune_and_recalibrate(base_model, X_bal, y_bal,
     )
     stripped = tfmot.sparsity.keras.strip_pruning(pruned)
 
+<<<<<<< HEAD
     # Phase 2: recalibrate on real imbalanced data
     print("  Phase 2: recalibrating on real imbalanced data (%d epochs)..." % recal_epochs)
     stripped.compile(
         optimizer=tf.keras.optimizers.Adam(lr * 0.1),  # lower LR
+=======
+    print("  Phase 2: recalibrating on real imbalanced data (%d epochs)..." % recal_epochs)
+    stripped.compile(
+        optimizer=tf.keras.optimizers.Adam(lr * 0.1),
+>>>>>>> 2b7929ec17ef2b91c0a0dc87c5b9bbcde3ebc5b9
         loss="binary_crossentropy",
         metrics=["accuracy"],
     )
@@ -697,7 +714,11 @@ def main():
         ],
     ))
 
+<<<<<<< HEAD
     # Step 5 — Pruned 70% (reduced to 60% sparsity) + recalibration
+=======
+    # Step 5 — Pruned 70% (60% sparsity) + recalibration
+>>>>>>> 2b7929ec17ef2b91c0a0dc87c5b9bbcde3ebc5b9
     print("\nSTEP 5 — Magnitude Pruning 70% (60pct sparsity) + Recalibration + Hybrid INT8")
     p70_keras  = os.path.join(MODELS_DIR, "pruned_70_v8.keras")
     p70_tflite = os.path.join(MODELS_DIR, "pruned_70_v8.tflite")
@@ -706,7 +727,10 @@ def main():
         pruned_70 = tf.keras.models.load_model(p70_keras, compile=False)
         print("  Loaded cached model.")
     else:
+<<<<<<< HEAD
         # Use 60% sparsity — 70% was too aggressive for +P on this model size
+=======
+>>>>>>> 2b7929ec17ef2b91c0a0dc87c5b9bbcde3ebc5b9
         pruned_70 = prune_and_recalibrate(
             baseline, X_bal, y_bal, X_train, y_train, class_weight,
             target_sparsity=0.60, prune_epochs=10, recal_epochs=3)
@@ -796,4 +820,8 @@ def main():
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     main()
+=======
+    main()
+>>>>>>> 2b7929ec17ef2b91c0a0dc87c5b9bbcde3ebc5b9

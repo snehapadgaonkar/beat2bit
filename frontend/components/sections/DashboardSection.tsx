@@ -55,17 +55,18 @@ export function DashboardSection({ reports, loading, selectedName, onSelectName 
   ];
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Header + device selector */}
+    <div className="space-y-6 pb-12 sm:space-y-8 sm:pb-16">
+      {/* ── Header + model selector ──────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-rose-500">Live Telemetry</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Edge device dashboard</h1>
-          <p className="mt-2 max-w-xl text-slate-600">
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Edge device dashboard</h1>
+          <p className="mt-2 max-w-xl text-sm text-slate-600 sm:text-base">
             Real-time inference metrics from the edge microcontroller running the selected Beat2Bit model.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        {/* Scrollable pill selector on narrow screens */}
+        <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
           {reports.map((r) => {
             const m = meta(r.metadata.model_name);
             if (!m) return null;
@@ -75,7 +76,7 @@ export function DashboardSection({ reports, loading, selectedName, onSelectName 
                 key={r.metadata.model_name}
                 onClick={() => onSelectName(r.metadata.model_name)}
                 className={cn(
-                  'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
+                  'flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
                   active ? 'border-rose-200 bg-rose-50 text-rose-700 ring-1 ring-rose-200' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                 )}
               >
@@ -87,59 +88,63 @@ export function DashboardSection({ reports, loading, selectedName, onSelectName 
         </div>
       </div>
 
-      {/* KPI grid */}
+      {/* ── KPI grid — 2 col on mobile → 4 col on md ────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {kpis.map((k, i) => (
-          <div key={i} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+          <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
             <div className="flex items-center gap-2 text-slate-500">
-              <k.icon className={cn('h-4 w-4', k.color)} />
-              <span className="text-xs font-medium uppercase tracking-wide">{k.label}</span>
+              <k.icon className={cn('h-4 w-4 shrink-0', k.color)} />
+              <span className="text-[10px] font-medium uppercase tracking-wide sm:text-xs">{k.label}</span>
             </div>
-            <div className="mt-3 text-2xl font-bold text-slate-900">{loading ? '—' : k.value}</div>
-            <div className="mt-1 text-xs text-slate-400">{k.sub}</div>
+            <div className="mt-3 text-xl font-bold text-slate-900 sm:text-2xl">{loading ? '—' : k.value}</div>
+            <div className="mt-1 text-[10px] text-slate-400 sm:text-xs">{k.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* ECG monitor */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
+      {/* ── ECG monitor ─────────────────────────────────────────────────────── */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 font-semibold text-slate-900">
               <Waves className="h-4 w-4 text-rose-500" /> Live ECG Monitor
             </h2>
-            <p className="text-sm text-slate-500">Streaming waveform · {selected.dataset_info.samples.toLocaleString()} sample corpus</p>
+            <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+              Streaming waveform · {selected.dataset_info.samples.toLocaleString()} sample corpus
+            </p>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600">
+          <span className="inline-flex w-max items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> Streaming
           </span>
         </div>
         <ECGChart />
       </div>
 
-      {/* Latency + throughput */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      {/* ── Latency + Throughput ─────────────────────────────────────────────── */}
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-2">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h3 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
             <Timer className="h-4 w-4 text-sky-500" /> Latency Distribution
           </h3>
-          <p className="mb-4 text-sm text-slate-500">{best?.label} · batch=1 · {ls.latency_stats.batch_size_1?.n_measurements ?? '—'} measurements</p>
+          <p className="mb-4 text-xs text-slate-500 sm:text-sm">
+            {best?.label} · batch=1 · {ls.latency_stats.batch_size_1?.n_measurements ?? '—'} measurements
+          </p>
           <LatencyDistributionChart report={selected} />
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h3 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
             <ArrowUpRight className="h-4 w-4 text-emerald-500" /> Throughput Comparison
           </h3>
-          <p className="mb-4 text-sm text-slate-500">Single-sample throughput across the optimization ladder.</p>
+          <p className="mb-4 text-xs text-slate-500 sm:text-sm">Single-sample throughput across the optimization ladder.</p>
           <ThroughputChart data={throughputData} />
         </div>
       </div>
 
-      {/* Batch analysis */}
-      <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-sm">
+      {/* ── Batch analysis ───────────────────────────────────────────────────── */}
+      <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-sm sm:p-6">
         <h3 className="font-semibold">Batch sizing analysis</h3>
-        <p className="mt-1 text-sm text-slate-300">Optimal configuration detected by the backend latency benchmarker.</p>
+        <p className="mt-1 text-xs text-slate-300 sm:text-sm">Optimal configuration detected by the backend latency benchmarker.</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <BatchStat label="Best batch for latency" value={`${ls.summary.optimal_batch_size_for_latency}`} sub="lowest per-sample latency" />
           <BatchStat label="Best batch for throughput" value={`${ls.summary.optimal_batch_size_for_throughput}`} sub="max samples per second" />
@@ -157,9 +162,9 @@ export function DashboardSection({ reports, loading, selectedName, onSelectName 
 function BatchStat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-      <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-2 text-2xl font-bold">{value}</p>
-      <p className="mt-1 text-xs text-slate-400">{sub}</p>
+      <p className="text-[10px] uppercase tracking-wide text-slate-400 sm:text-xs">{label}</p>
+      <p className="mt-2 text-xl font-bold sm:text-2xl">{value}</p>
+      <p className="mt-1 text-[10px] text-slate-400 sm:text-xs">{sub}</p>
     </div>
   );
 }
