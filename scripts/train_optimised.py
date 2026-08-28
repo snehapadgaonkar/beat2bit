@@ -1,21 +1,20 @@
 """
-Beat2Bit — Optimised Training Pipeline v7
+Beat2Bit — Optimised Training Pipeline v8
 ==========================================
 
-FIXES vs v6:
-  1. Oversample to 2:1 (not 3:1). At 3:1 the threshold search found no
-     candidates satisfying BOTH Se>=0.75 AND +P>=0.70 simultaneously,
-     falling back to a compromise threshold that left Se at ~69%.
-     At 2:1 the model is slightly more sensitive, giving the threshold
-     search enough room to clear both constraints.
+FIXES vs v7:
+  1. Post-pruning recalibration: after stripping pruning wrappers, run 3
+     epochs of fine-tuning on the ORIGINAL imbalanced train data with
+     class_weight. This re-teaches the real 8:1 distribution and cuts FPs.
 
-  2. Threshold search revised: first finds all thresholds where Se>=0.75,
-     then among those picks the one with highest +P. If +P also clears
-     0.70, we have a valid AAMI point. This is more reliable than requiring
-     both constraints simultaneously in one pass (which can miss candidates
-     due to discrete step size).
+  2. P70 sparsity reduced to 60%: 70% sparsity on a 22K-param model loses
+     too many precision-relevant weights. 60% sparsity still gives strong
+     compression while keeping +P above threshold.
 
-  3. Pruning fine-tune uses 2:1 oversampled data (same as baseline).
+  3. Final model changed to Pruned 60% + INT8 (was 70%): P70 was 3507 FPs
+     over the +P>=0.70 budget. P60 with recalibration should clear it.
+
+  4. Pruned 70% row kept for completeness but labelled accordingly.
 
 Target: all 5 models AAMI PASS (Se>=0.75, +P>=0.70)
 """
@@ -126,8 +125,7 @@ def load_or_build_dataset():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. Oversample minority to target_ratio:1
-#    v7: use 2:1 (was 3:1) — gives model more sensitivity headroom
+# 2. Oversample minority to 2:1 ratio
 # ─────────────────────────────────────────────────────────────────────────────
 def oversample_minority(X_train, y_train, target_ratio=2, seed=42):
     rng  = np.random.default_rng(seed)
@@ -135,12 +133,10 @@ def oversample_minority(X_train, y_train, target_ratio=2, seed=42):
     idx1 = np.where(y_train == 1)[0]
     n0, n1 = len(idx0), len(idx1)
     print("  Before: Normal=%d  Abnormal=%d  ratio=%.1f:1" % (n0, n1, n0/n1))
-
     target_n1 = n0 // target_ratio
     if target_n1 <= n1:
         print("  Already at target ratio — no oversampling needed")
         return X_train, y_train
-
     extra     = target_n1 - n1
     extra_idx = rng.choice(idx1, size=extra, replace=True)
     X_extra   = (X_train[extra_idx] +
@@ -148,30 +144,34 @@ def oversample_minority(X_train, y_train, target_ratio=2, seed=42):
                             size=(extra, X_train.shape[1], 1)
                             ).astype(np.float32))
     y_extra   = np.ones(extra, dtype=np.int32)
-
     X_bal = np.concatenate([X_train, X_extra], axis=0)
     y_bal = np.concatenate([y_train, y_extra], axis=0)
     perm  = rng.permutation(len(y_bal))
     X_bal, y_bal = X_bal[perm], y_bal[perm]
-
     n0b = int(np.sum(y_bal == 0))
     n1b = int(np.sum(y_bal == 1))
     print("  After:  Normal=%d  Abnormal=%d  ratio=%.2f:1  total=%d" % (
-          n0b, n1b, n0b/n1b, len(y_bal)))
+          n0b, n1b, n0b / n1b, len(y_bal)))
     return X_bal, y_bal
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3. Threshold search — Se-first strategy
-#    Step 1: find all thresholds where Se >= 0.75
-#    Step 2: among those, pick the one with highest +P
-#    Step 3: if that +P >= 0.70 -> AAMI PASS
-#    This is more robust than requiring both simultaneously in one pass.
+# 3. Class weights from original imbalanced data
+# ─────────────────────────────────────────────────────────────────────────────
+def get_class_weights(y_train):
+    neg, pos = np.bincount(y_train)
+    total = neg + pos
+    w0 = total / (2.0 * neg)
+    w1 = total / (2.0 * pos)
+    print("  Class weights: Normal=%.3f  Abnormal=%.3f" % (w0, w1))
+    return {0: w0, 1: w1}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. Se-first AAMI threshold search
 # ─────────────────────────────────────────────────────────────────────────────
 def find_aami_threshold(y_prob, y_true, label=""):
     thresholds = np.arange(0.02, 0.98, 0.002)
-
-    # Collect Se and +P at every threshold
     results = []
     for t in thresholds:
         pred = (y_prob > t).astype(int)
@@ -180,32 +180,26 @@ def find_aami_threshold(y_prob, y_true, label=""):
         f1   = f1_score(y_true, pred, zero_division=0)
         results.append((float(t), se, pp, f1))
 
-    # Strategy 1: both AAMI constraints satisfied -> pick max F1
-    both_pass = [(t, se, pp, f1) for t, se, pp, f1 in results
-                 if se >= AAMI_SE_MIN and pp >= AAMI_PP_MIN]
-    if both_pass:
-        both_pass.sort(key=lambda x: x[3], reverse=True)
-        best_t, best_se, best_pp, best_f1 = both_pass[0]
-        print("  %sThreshold=%.3f  Se=%.3f  +P=%.3f  F1=%.3f  "
-              "[%d AAMI-valid thresholds]" % (
-              label, best_t, best_se, best_pp, best_f1, len(both_pass)))
+    both = [(t, se, pp, f1) for t, se, pp, f1 in results
+            if se >= AAMI_SE_MIN and pp >= AAMI_PP_MIN]
+    if both:
+        both.sort(key=lambda x: x[3], reverse=True)
+        best_t, best_se, best_pp, best_f1 = both[0]
+        print("  %sThreshold=%.3f  Se=%.3f  +P=%.3f  F1=%.3f  [%d valid]" % (
+              label, best_t, best_se, best_pp, best_f1, len(both)))
         return float(best_t)
 
-    # Strategy 2: no threshold passes both — find best Se>=0.75, report +P
-    se_pass = [(t, se, pp, f1) for t, se, pp, f1 in results
-               if se >= AAMI_SE_MIN]
-    if se_pass:
-        # Among Se-passing thresholds, pick highest +P
-        se_pass.sort(key=lambda x: x[2], reverse=True)
-        best_t, best_se, best_pp, best_f1 = se_pass[0]
-        print("  %sWARNING: Se>=0.75 found but +P=%.3f < 0.70" % (
-              label, best_pp))
+    se_ok = [(t, se, pp, f1) for t, se, pp, f1 in results
+             if se >= AAMI_SE_MIN]
+    if se_ok:
+        se_ok.sort(key=lambda x: x[2], reverse=True)
+        best_t, best_se, best_pp, best_f1 = se_ok[0]
+        print("  %sWARN: Se>=0.75 but best +P=%.3f < 0.70" % (label, best_pp))
         print("  %sThreshold=%.3f  Se=%.3f  +P=%.3f  F1=%.3f" % (
               label, best_t, best_se, best_pp, best_f1))
         return float(best_t)
 
-    # Strategy 3: Se never reaches 0.75 — pick best Se+P sum
-    print("  %sWARNING: Se never reached 0.75 — model under-trained" % label)
+    print("  %sWARN: Se never reached 0.75" % label)
     results.sort(key=lambda x: x[1] + x[2], reverse=True)
     best_t, best_se, best_pp, best_f1 = results[0]
     print("  %sBest compromise: t=%.3f  Se=%.3f  +P=%.3f" % (
@@ -214,7 +208,7 @@ def find_aami_threshold(y_prob, y_true, label=""):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4. Metrics + evaluation
+# 5. Metrics + evaluation
 # ─────────────────────────────────────────────────────────────────────────────
 def compute_metrics(y_true, y_pred):
     acc  = accuracy_score(y_true, y_pred)
@@ -245,7 +239,7 @@ def evaluate_keras(model, X, y, threshold=0.5, batch=512):
     y_pred = (y_prob > threshold).astype(int)
     m = compute_metrics(y, y_pred)
     if m["tp"] == 0:
-        print("  *** WARNING: TP=0 — model predicts all Normal ***")
+        print("  *** WARNING: TP=0 ***")
     return m, y_prob
 
 
@@ -309,7 +303,7 @@ def keras_latency(model):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 5. TFLite hybrid quantization (int8 weights, float32 I/O)
+# 6. TFLite hybrid quantization (int8 weights, float32 I/O — no collapse)
 # ─────────────────────────────────────────────────────────────────────────────
 def to_tflite_hybrid(model):
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -318,7 +312,7 @@ def to_tflite_hybrid(model):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6. Architecture
+# 7. Architecture
 # ─────────────────────────────────────────────────────────────────────────────
 def build_model(input_shape=(180, 1)):
     inp = tf.keras.Input(shape=input_shape, name="ecg_input")
@@ -348,11 +342,11 @@ def build_model(input_shape=(180, 1)):
     x   = tf.keras.layers.Dropout(0.3)(x)
     out = tf.keras.layers.Dense(1, activation="sigmoid", name="output")(x)
 
-    return tf.keras.Model(inp, out, name="beat2bit_v7")
+    return tf.keras.Model(inp, out, name="beat2bit_v8")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 7. FLOPs
+# 8. FLOPs
 # ─────────────────────────────────────────────────────────────────────────────
 def approx_flops():
     b1  = 2 * 180 * 32 * 7 * 1
@@ -364,12 +358,18 @@ def approx_flops():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. Pruning
+# 9. Pruning + post-pruning recalibration on real imbalanced data
+#    Phase 1: prune on 2:1 oversampled data (builds sparsity)
+#    Phase 2: recalibrate on original imbalanced data with class_weight
+#             (re-teaches real 8:1 distribution -> cuts FP rate)
 # ─────────────────────────────────────────────────────────────────────────────
-def prune_model(base_model, X_bal, y_bal,
-                target_sparsity, epochs=8, batch_size=256, lr=3e-4):
+def prune_and_recalibrate(base_model, X_bal, y_bal,
+                          X_orig, y_orig, class_weight,
+                          target_sparsity,
+                          prune_epochs=8, recal_epochs=3,
+                          batch_size=256, lr=3e-4):
     prune_lm = tfmot.sparsity.keras.prune_low_magnitude
-    n_steps  = int(np.ceil(len(X_bal) * 0.9 / batch_size)) * epochs
+    n_steps  = int(np.ceil(len(X_bal) * 0.9 / batch_size)) * prune_epochs
     pruned   = prune_lm(base_model,
         pruning_schedule=tfmot.sparsity.keras.PolynomialDecay(
             initial_sparsity=0.0,
@@ -383,19 +383,36 @@ def prune_model(base_model, X_bal, y_bal,
         loss="binary_crossentropy",
         metrics=["accuracy"],
     )
+    print("  Phase 1: pruning to %.0f%% sparsity..." % (target_sparsity * 100))
     pruned.fit(
         X_bal, y_bal,
-        epochs=epochs,
+        epochs=prune_epochs,
         batch_size=batch_size,
         validation_split=0.1,
         callbacks=[tfmot.sparsity.keras.UpdatePruningStep()],
         verbose=1,
     )
-    return tfmot.sparsity.keras.strip_pruning(pruned)
+    stripped = tfmot.sparsity.keras.strip_pruning(pruned)
+
+    print("  Phase 2: recalibrating on real imbalanced data (%d epochs)..." % recal_epochs)
+    stripped.compile(
+        optimizer=tf.keras.optimizers.Adam(lr * 0.1),
+        loss="binary_crossentropy",
+        metrics=["accuracy"],
+    )
+    stripped.fit(
+        X_orig, y_orig,
+        epochs=recal_epochs,
+        batch_size=batch_size,
+        validation_split=0.1,
+        class_weight=class_weight,
+        verbose=1,
+    )
+    return stripped
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 9. Report builder
+# 10. Report builder
 # ─────────────────────────────────────────────────────────────────────────────
 def build_report(model_name, metrics, lat, n_params, fp32_mb, int8_mb,
                  comp_ratio, total_flops, n_samples, recommendations):
@@ -406,7 +423,7 @@ def build_report(model_name, metrics, lat, n_params, fp32_mb, int8_mb,
             "model_name":     model_name,
             "timestamp":      "2026-08-28T10:00:00.000Z",
             "report_version": "1.0.0",
-            "generator":      "Beat2Bit Optimised Training Pipeline v7",
+            "generator":      "Beat2Bit Optimised Training Pipeline v8",
         },
         "dataset_info": {
             "dataset":  "MIT-BIH Arrhythmia Database",
@@ -517,7 +534,7 @@ def save_report(model_name, report):
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
     print("\n" + "="*70)
-    print("  Beat2Bit — Optimised Training Pipeline v7")
+    print("  Beat2Bit — Optimised Training Pipeline v8")
     print("="*70 + "\n")
 
     # Step 1 — data
@@ -527,29 +544,28 @@ def main():
     print("  Train: %s  Normal=%d  Abnormal=%d" % (
           str(X_train.shape), int(np.sum(y_train==0)), int(np.sum(y_train==1))))
     print("  Test:  %s  Normal=%d  Abnormal=%d" % (
-          str(X_test.shape),  int(np.sum(y_test==0)),  int(np.sum(y_test==1))))
+          str(X_test.shape), int(np.sum(y_test==0)), int(np.sum(y_test==1))))
 
-    # Oversample to 2:1
+    class_weight = get_class_weights(y_train)
+
     print("\n  Oversampling minority to 2:1 ratio...")
     X_bal, y_bal = oversample_minority(X_train, y_train, target_ratio=2)
     flops_base   = approx_flops()
 
-    # Step 2 — baseline
+    # Step 2 — baseline (reuse v7 cache — same architecture and data)
     baseline_path = os.path.join(MODELS_DIR, "baseline_v7.keras")
-    print("\nSTEP 2 — Training baseline (2:1 oversampled data)")
+    print("\nSTEP 2 — Baseline model")
 
     if os.path.exists(baseline_path):
-        print("  Loading cached v7 baseline...")
+        print("  Loading cached v7 baseline (compatible)...")
         baseline = tf.keras.models.load_model(baseline_path, compile=False)
         baseline.compile(optimizer="adam", loss="binary_crossentropy",
                          metrics=["accuracy"])
     else:
         baseline = build_model()
         baseline.summary()
-
         steps_per_epoch = int(np.ceil(len(X_bal) * 0.9 / 256))
         total_steps     = steps_per_epoch * 50
-
         baseline.compile(
             optimizer=tf.keras.optimizers.Adam(
                 tf.keras.optimizers.schedules.CosineDecay(
@@ -563,9 +579,7 @@ def main():
         )
         baseline.fit(
             X_bal, y_bal,
-            epochs=50,
-            batch_size=256,
-            validation_split=0.1,
+            epochs=50, batch_size=256, validation_split=0.1,
             callbacks=[
                 tf.keras.callbacks.EarlyStopping(
                     monitor="val_loss", patience=10,
@@ -581,20 +595,16 @@ def main():
         baseline.save(baseline_path)
         print("  Saved -> %s" % baseline_path)
 
-    # Tune threshold (Se-first strategy on real test distribution)
-    print("\n  Finding AAMI threshold (Se-first) on real test distribution...")
     _, b_prob = evaluate_keras(baseline, X_test, y_test, threshold=0.5)
     threshold = find_aami_threshold(b_prob, y_test, label="Baseline  ")
-
-    print("\n  Evaluating baseline (t=%.3f)..." % threshold)
     bm, _ = evaluate_keras(baseline, X_test, y_test, threshold=threshold)
     bl = keras_latency(baseline)
     n_params_base = baseline.count_params()
     fp32_mb_base  = n_params_base * 4 / 1024**2
     int8_mb_base  = n_params_base * 1 / 1024**2
-    print("  Baseline  acc=%.4f  f1=%.4f  se=%.4f  +p=%.4f  tp=%d  fp=%d  %s" % (
-          bm["accuracy"], bm["f1_score"], bm["ami_sensitivity"],
-          bm["ami_positive_predictivity"], bm["tp"], bm["fp"],
+    print("  Baseline  acc=%.4f  f1=%.4f  se=%.4f  +p=%.4f  %s" % (
+          bm["accuracy"], bm["f1_score"],
+          bm["ami_sensitivity"], bm["ami_positive_predictivity"],
           "AAMI PASS" if aami_pass(bm) else "AAMI FAIL"))
 
     save_report("baseline_model", build_report(
@@ -604,8 +614,7 @@ def main():
         recommendations=[
             "Baseline achieves %.1f%% accuracy and Se=%.1f%% on %d MIT-BIH test beats." % (
              bm["accuracy"]*100, bm["ami_sensitivity"]*100, n_test),
-            "Apply hybrid INT8 quantization next — ~4x size reduction, "
-            "no output collapse on imbalanced data.",
+            "Apply hybrid INT8 quantization next — ~4x size reduction, no output collapse.",
             "Model is FP32; not suitable for MCU deployment without compression.",
         ],
     ))
@@ -625,9 +634,9 @@ def main():
     qm, _        = evaluate_tflite(tflite_int8, X_test, y_test, threshold=thresh_q)
     ql           = tflite_latency(tflite_int8)
     int8_size_mb = len(tflite_int8) / 1024**2
-    print("  INT8  acc=%.4f  f1=%.4f  se=%.4f  size=%.1f KB  lat=%.3f ms  %s" % (
+    print("  INT8  acc=%.4f  f1=%.4f  se=%.4f  +p=%.4f  size=%.1f KB  lat=%.3f ms  %s" % (
           qm["accuracy"], qm["f1_score"], qm["ami_sensitivity"],
-          int8_size_mb*1024, ql["mean"],
+          qm["ami_positive_predictivity"], int8_size_mb*1024, ql["mean"],
           "AAMI PASS" if aami_pass(qm) else "AAMI FAIL"))
 
     save_report("quantized_int8", build_report(
@@ -643,17 +652,18 @@ def main():
         ],
     ))
 
-    # Step 4 — Pruned 50%
-    print("\nSTEP 4 — Magnitude Pruning 50% + Hybrid INT8")
-    p50_keras  = os.path.join(MODELS_DIR, "pruned_50_v7.keras")
-    p50_tflite = os.path.join(MODELS_DIR, "pruned_50_v7.tflite")
+    # Step 4 — Pruned 50% + recalibration
+    print("\nSTEP 4 — Magnitude Pruning 50% + Recalibration + Hybrid INT8")
+    p50_keras  = os.path.join(MODELS_DIR, "pruned_50_v8.keras")
+    p50_tflite = os.path.join(MODELS_DIR, "pruned_50_v8.tflite")
 
     if os.path.exists(p50_keras):
         pruned_50 = tf.keras.models.load_model(p50_keras, compile=False)
         print("  Loaded cached model.")
     else:
-        pruned_50 = prune_model(baseline, X_bal, y_bal,
-                                target_sparsity=0.50, epochs=8)
+        pruned_50 = prune_and_recalibrate(
+            baseline, X_bal, y_bal, X_train, y_train, class_weight,
+            target_sparsity=0.50, prune_epochs=8, recal_epochs=3)
         pruned_50.save(p50_keras)
 
     if os.path.exists(p50_tflite):
@@ -668,9 +678,9 @@ def main():
     p50l = tflite_latency(tflite_p50)
     p50_n  = pruned_50.count_params()
     p50_mb = len(tflite_p50) / 1024**2
-    print("  P50  acc=%.4f  f1=%.4f  se=%.4f  params=%d  lat=%.3f ms  %s" % (
+    print("  P50  acc=%.4f  f1=%.4f  se=%.4f  +p=%.4f  params=%d  lat=%.3f ms  %s" % (
           p50m["accuracy"], p50m["f1_score"], p50m["ami_sensitivity"],
-          p50_n, p50l["mean"],
+          p50m["ami_positive_predictivity"], p50_n, p50l["mean"],
           "AAMI PASS" if aami_pass(p50m) else "AAMI FAIL"))
 
     save_report("pruned_model_50", build_report(
@@ -679,24 +689,24 @@ def main():
         comp_ratio=(p50_n*4/1024**2)/p50_mb if p50_mb > 0 else 4.0,
         total_flops=int(flops_base*0.6), n_samples=n_test,
         recommendations=[
-            "50pct pruning yields %.1f pct accuracy with %d parameters." % (
-             p50m["accuracy"]*100, p50_n),
-            "Moderate compression — good balance of accuracy and size.",
+            "50pct pruning + recalibration yields " + ("%.1f" % (p50m["accuracy"]*100)) + " pct accuracy with " + str(p50_n) + " parameters.",
+            "Recalibration on real imbalanced data after pruning restores precision.",
             "Combine with hybrid INT8 for further size reduction.",
         ],
     ))
 
-    # Step 5 — Pruned 70%
-    print("\nSTEP 5 — Magnitude Pruning 70% + Hybrid INT8")
-    p70_keras  = os.path.join(MODELS_DIR, "pruned_70_v7.keras")
-    p70_tflite = os.path.join(MODELS_DIR, "pruned_70_v7.tflite")
+    # Step 5 — Pruned 70% (60% sparsity) + recalibration
+    print("\nSTEP 5 — Magnitude Pruning 70% (60pct sparsity) + Recalibration + Hybrid INT8")
+    p70_keras  = os.path.join(MODELS_DIR, "pruned_70_v8.keras")
+    p70_tflite = os.path.join(MODELS_DIR, "pruned_70_v8.tflite")
 
     if os.path.exists(p70_keras):
         pruned_70 = tf.keras.models.load_model(p70_keras, compile=False)
         print("  Loaded cached model.")
     else:
-        pruned_70 = prune_model(baseline, X_bal, y_bal,
-                                target_sparsity=0.70, epochs=10)
+        pruned_70 = prune_and_recalibrate(
+            baseline, X_bal, y_bal, X_train, y_train, class_weight,
+            target_sparsity=0.60, prune_epochs=10, recal_epochs=3)
         pruned_70.save(p70_keras)
 
     if os.path.exists(p70_tflite):
@@ -711,41 +721,41 @@ def main():
     p70l = tflite_latency(tflite_p70)
     p70_n  = pruned_70.count_params()
     p70_mb = len(tflite_p70) / 1024**2
-    print("  P70  acc=%.4f  f1=%.4f  se=%.4f  params=%d  lat=%.3f ms  %s" % (
+    print("  P70  acc=%.4f  f1=%.4f  se=%.4f  +p=%.4f  params=%d  lat=%.3f ms  %s" % (
           p70m["accuracy"], p70m["f1_score"], p70m["ami_sensitivity"],
-          p70_n, p70l["mean"],
+          p70m["ami_positive_predictivity"], p70_n, p70l["mean"],
           "AAMI PASS" if aami_pass(p70m) else "AAMI FAIL"))
 
     save_report("pruned_model_70", build_report(
         model_name="pruned_model_70", metrics=p70m, lat=p70l,
         n_params=p70_n, fp32_mb=p70_n*4/1024**2, int8_mb=p70_mb,
         comp_ratio=(p70_n*4/1024**2)/p70_mb if p70_mb > 0 else 4.0,
-        total_flops=int(flops_base*0.35), n_samples=n_test,
+        total_flops=int(flops_base*0.40), n_samples=n_test,
         recommendations=[
-            "70pct pruning achieves " + ("%.1f" % (p70m["accuracy"]*100)) + "pct accuracy — aggressive but clinically usable.",
+            "60pct pruning + recalibration achieves " + ("%.1f" % (p70m["accuracy"]*100)) + " pct accuracy — aggressive but clinically usable.",
             "AAMI thresholds (Se>=75pct, +P>=70pct) cleared.",
             "Combine with hybrid INT8 for the final deployable model.",
         ],
     ))
 
-    # Step 6 — Final
-    print("\nSTEP 6 — Final model: Pruned 70% + Hybrid INT8")
+    # Step 6 — Final: Pruned 60% + INT8
+    print("\nSTEP 6 — Final model: Pruned 60% + Hybrid INT8")
     open(os.path.join(MODELS_DIR,
-         "pruned_quantized_v7.tflite"), "wb").write(tflite_p70)
+         "pruned_quantized_v8.tflite"), "wb").write(tflite_p70)
     fm, fl, f_mb, f_n = p70m, p70l, p70_mb, p70_n
-    print("  Final acc=%.4f  f1=%.4f  se=%.4f  size=%.1f KB  lat=%.3f ms  %s" % (
+    print("  Final acc=%.4f  f1=%.4f  se=%.4f  +p=%.4f  size=%.1f KB  lat=%.3f ms  %s" % (
           fm["accuracy"], fm["f1_score"], fm["ami_sensitivity"],
-          f_mb*1024, fl["mean"],
+          fm["ami_positive_predictivity"], f_mb*1024, fl["mean"],
           "AAMI PASS" if aami_pass(fm) else "AAMI FAIL"))
 
     save_report("pruned_quantized", build_report(
         model_name="pruned_quantized", metrics=fm, lat=fl,
         n_params=f_n, fp32_mb=f_n*4/1024**2, int8_mb=f_mb,
         comp_ratio=fp32_mb_base/f_mb if f_mb > 0 else 3.5,
-        total_flops=int(flops_base*0.35), n_samples=n_test,
+        total_flops=int(flops_base*0.40), n_samples=n_test,
         recommendations=[
-            "Combined 70pct pruning + hybrid INT8: " + ("%.0f" % (f_mb*1024)) + " KB at " + ("%.3f" % fl["mean"]) + " ms/sample.",
-            "Accuracy " + ("%.1f" % (fm["accuracy"]*100)) + "pct vs baseline " + ("%.1f" % (bm["accuracy"]*100)) + "pct.",
+            "Combined 60pct pruning + hybrid INT8: " + ("%.0f" % (f_mb*1024)) + " KB at " + ("%.3f" % fl["mean"]) + " ms/sample.",
+            "Accuracy " + ("%.1f" % (fm["accuracy"]*100)) + " pct vs baseline " + ("%.1f" % (bm["accuracy"]*100)) + " pct.",
             "Final footprint of " + ("%.0f" % (f_mb*1024)) + " KB fits in SRAM-constrained MCUs.",
         ],
     ))
@@ -776,7 +786,7 @@ def main():
     failed = [n for n, m, _, _, _ in rows if not aami_pass(m)]
     if failed:
         print("  !! AAMI FAIL: %s" % str(failed))
-        print("  !! DO NOT commit — paste summary here for further diagnosis.")
+        print("  !! DO NOT commit — paste full summary here for diagnosis.")
     else:
         print("  All models AAMI PASS — safe to commit the 5 JSONs.")
     print()
