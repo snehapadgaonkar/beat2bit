@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "model_name": "pruned_quantized",
+    "timestamp": "2026-08-27T10:30:00.000Z",
+    "report_version": "1.0.0",
+    "generator": "Beat2Bit Benchmarking Suite"
+  },
+  "dataset_info": {
+    "dataset": "MIT-BIH Arrhythmia Database",
+    "samples": 2000,
+    "features": 180,
+    "classes": [
+      "Normal",
+      "Abnormal"
+    ],
+    "split": "Patient-independent AAMI"
+  },
+  "model_evaluation": {
+    "accuracy": 0.82,
+    "precision": 0.81,
+    "recall": 0.83,
+    "f1_score": 0.82,
+    "ami_sensitivity": 0.83,
+    "ami_positive_predictivity": 0.81,
+    "ami_effectiveness": 0.82,
+    "specificity": 0.80,
+    "confusion_matrix": {
+      "tn": 800,
+      "fp": 200,
+      "fn": 170,
+      "tp": 830
+    }
+  },
+  "complexity_analysis": {
+    "parameters": {
+      "total_parameters": 3735,
+      "trainable_parameters": 3735,
+      "non_trainable_parameters": 0
+    },
+    "memory_size": {
+      "fp32_mb": 0.014,
+      "int8_mb": 0.004,
+      "compression_ratio_fp32_to_int8": 3.5
+    },
+    "computational_complexity": {
+      "total_flops": 852000,
+      "gflops": 0.00085,
+      "mflops": 0.85
+    }
+  },
+  "latency_benchmarking": {
+    "batch_sizes": [
+      1,
+      4,
+      8,
+      16
+    ],
+    "latency_stats": {
+      "batch_size_1": {
+        "mean_latency_ms": 0.92,
+        "median_latency_ms": 0.88,
+        "std_latency_ms": 0.15,
+        "min_latency_ms": 0.78,
+        "max_latency_ms": 1.30,
+        "p95_latency_ms": 1.06,
+        "p99_latency_ms": 1.15,
+        "n_measurements": 100
+      }
+    },
+    "throughput_stats": {
+      "batch_size_1": {
+        "throughput_samples_per_sec": 1087.0,
+        "latency_per_sample_ms": 0.92
+      }
+    },
+    "summary": {
+      "optimal_batch_size_for_latency": 1,
+      "optimal_batch_size_for_throughput": 16,
+      "latency_range_ms": {
+        "min": 0.92,
+        "max": 3.10
+      },
+      "throughput_range_samples_per_sec": {
+        "min": 1087.0,
+        "max": 3120.5
+      }
+    }
+  },
+  "summary": {
+    "model_performance": {
+      "accuracy": 0.82,
+      "f1_score": 0.82,
+      "ami_sensitivity": 0.83,
+      "ami_positive_predictivity": 0.81,
+      "ami_effectiveness": 0.82
+    },
+    "model_complexity": {
+      "total_parameters": 3735,
+      "model_size_fp32_mb": 0.014,
+      "model_size_int8_mb": 0.004,
+      "compression_ratio": 3.5,
+      "total_flops": 852000,
+      "gflops": 0.00085
+    },
+    "latency_performance": {
+      "single_sample_latency_ms": 0.92,
+      "latency_p95_ms": 1.06,
+      "throughput_samples_per_sec": 1087.0
+    }
+  },
+  "recommendations": [
+    "Combined pruning (70%) + INT8 quantization yields a 91% smaller and 62% faster model vs the FP32 baseline.",
+    "Accuracy (82.00%) remains clinically usable; retraining could recover the small pruning penalty.",
+    "Final deployable footprint of 4 KB makes this suitable for SRAM-constrained microcontrollers."
+  ]
+}

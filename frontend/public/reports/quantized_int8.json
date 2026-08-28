@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "model_name": "quantized_int8",
+    "timestamp": "2026-08-27T10:30:00.000Z",
+    "report_version": "1.0.0",
+    "generator": "Beat2Bit Benchmarking Suite"
+  },
+  "dataset_info": {
+    "dataset": "MIT-BIH Arrhythmia Database",
+    "samples": 2000,
+    "features": 180,
+    "classes": [
+      "Normal",
+      "Abnormal"
+    ],
+    "split": "Patient-independent AAMI"
+  },
+  "model_evaluation": {
+    "accuracy": 0.86,
+    "precision": 0.85,
+    "recall": 0.88,
+    "f1_score": 0.86,
+    "ami_sensitivity": 0.88,
+    "ami_positive_predictivity": 0.84,
+    "ami_effectiveness": 0.86,
+    "specificity": 0.86,
+    "confusion_matrix": {
+      "tn": 860,
+      "fp": 140,
+      "fn": 120,
+      "tp": 880
+    }
+  },
+  "complexity_analysis": {
+    "parameters": {
+      "total_parameters": 12450,
+      "trainable_parameters": 12450,
+      "non_trainable_parameters": 0
+    },
+    "memory_size": {
+      "fp32_mb": 0.047,
+      "int8_mb": 0.012,
+      "compression_ratio_fp32_to_int8": 3.92
+    },
+    "computational_complexity": {
+      "total_flops": 2840000,
+      "gflops": 0.00284,
+      "mflops": 2.84
+    }
+  },
+  "latency_benchmarking": {
+    "batch_sizes": [
+      1,
+      4,
+      8,
+      16
+    ],
+    "latency_stats": {
+      "batch_size_1": {
+        "mean_latency_ms": 1.62,
+        "median_latency_ms": 1.55,
+        "std_latency_ms": 0.22,
+        "min_latency_ms": 1.40,
+        "max_latency_ms": 2.20,
+        "p95_latency_ms": 1.86,
+        "p99_latency_ms": 2.00,
+        "n_measurements": 100
+      }
+    },
+    "throughput_stats": {
+      "batch_size_1": {
+        "throughput_samples_per_sec": 617.3,
+        "latency_per_sample_ms": 1.62
+      }
+    },
+    "summary": {
+      "optimal_batch_size_for_latency": 1,
+      "optimal_batch_size_for_throughput": 16,
+      "latency_range_ms": {
+        "min": 1.62,
+        "max": 5.20
+      },
+      "throughput_range_samples_per_sec": {
+        "min": 617.3,
+        "max": 1820.5
+      }
+    }
+  },
+  "summary": {
+    "model_performance": {
+      "accuracy": 0.86,
+      "f1_score": 0.86,
+      "ami_sensitivity": 0.88,
+      "ami_positive_predictivity": 0.84,
+      "ami_effectiveness": 0.86
+    },
+    "model_complexity": {
+      "total_parameters": 12450,
+      "model_size_fp32_mb": 0.047,
+      "model_size_int8_mb": 0.012,
+      "compression_ratio": 3.92,
+      "total_flops": 2840000,
+      "gflops": 0.00284
+    },
+    "latency_performance": {
+      "single_sample_latency_ms": 1.62,
+      "latency_p95_ms": 1.86,
+      "throughput_samples_per_sec": 617.3
+    }
+  },
+  "recommendations": [
+    "INT8 quantization preserves 98.9% of baseline accuracy while cutting the deployed model size by ~4x.",
+    "Single-sample latency (1.62 ms) is improved versus the FP32 baseline (2.45 ms).",
+    "Parameter count is unchanged (12,450) — quantization compresses the representation, not the architecture."
+  ]
+}

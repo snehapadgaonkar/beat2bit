@@ -36,40 +36,43 @@ def full_train(epochs=10, batch_size=16):
         print("TensorFlow is required for full training mode. Install TensorFlow or run in smoke mode.")
         raise
 
-    # Try MIT-BIH processed filenames first (mitdb_*). Fall back to generic train/val naming.
+    # Try a list of known processed-split namings in order of preference.
+    # MIT-BIH (mitdb_*) -> generic (train/val/test) -> flat preprocess output
+    # (X_train/y_train + X_test/y_test, no validation split), which we split on
+    # the fly so `python -m src.training.train --full` works end-to-end.
     def load_processed():
-        # MIT-BIH naming
-        mit_x_train = os.path.join(DATA_DIR, 'mitdb_X_train.npy')
-        mit_y_train = os.path.join(DATA_DIR, 'mitdb_y_train.npy')
-        mit_x_val = os.path.join(DATA_DIR, 'mitdb_X_val.npy')
-        mit_y_val = os.path.join(DATA_DIR, 'mitdb_y_val.npy')
-        mit_x_test = os.path.join(DATA_DIR, 'mitdb_X_test.npy')
-        mit_y_test = os.path.join(DATA_DIR, 'mitdb_y_test.npy')
-        if all(os.path.exists(p) for p in [mit_x_train, mit_y_train, mit_x_val, mit_y_val, mit_x_test, mit_y_test]):
-            X_train = np.load(mit_x_train)
-            y_train = np.load(mit_y_train)
-            X_val = np.load(mit_x_val)
-            y_val = np.load(mit_y_val)
-            X_test = np.load(mit_x_test)
-            y_test = np.load(mit_y_test)
-            print("Loaded MIT-BIH processed dataset from", DATA_DIR)
-            return X_train, y_train, X_val, y_val, X_test, y_test
-        # Generic naming (synthetic generator)
-        gen_x_train = os.path.join(DATA_DIR, 'train.npy')
-        gen_y_train = os.path.join(DATA_DIR, 'train_labels.npy')
-        gen_x_val = os.path.join(DATA_DIR, 'val.npy')
-        gen_y_val = os.path.join(DATA_DIR, 'val_labels.npy')
-        gen_x_test = os.path.join(DATA_DIR, 'test.npy')
-        gen_y_test = os.path.join(DATA_DIR, 'test_labels.npy')
-        if all(os.path.exists(p) for p in [gen_x_train, gen_y_train, gen_x_val, gen_y_val, gen_x_test, gen_y_test]):
-            X_train = np.load(gen_x_train)
-            y_train = np.load(gen_y_train)
-            X_val = np.load(gen_x_val)
-            y_val = np.load(gen_y_val)
-            X_test = np.load(gen_x_test)
-            y_test = np.load(gen_y_test)
-            print("Loaded synthetic processed dataset from", DATA_DIR)
-            return X_train, y_train, X_val, y_val, X_test, y_test
+        candidates = [
+            ("MIT-BIH mitdb_*", ["mitdb_X_train.npy", "mitdb_y_train.npy", "mitdb_X_val.npy", "mitdb_y_val.npy", "mitdb_X_test.npy", "mitdb_y_test.npy"]),
+            ("synthetic train/val/test", ["train.npy", "train_labels.npy", "val.npy", "val_labels.npy", "test.npy", "test_labels.npy"]),
+            ("flat X_train/y_train (no val split)", ["X_train.npy", "y_train.npy", None, None, "X_test.npy", "y_test.npy"]),
+        ]
+
+        for label, files in candidates:
+            paths = [os.path.join(DATA_DIR, f) if f else None for f in files]
+            existing = [p for p in paths if p is not None]
+            if not existing or not all(os.path.exists(p) for p in existing):
+                continue
+
+            x_train = np.load(paths[0])
+            y_train = np.load(paths[1])
+
+            if paths[2] is not None and paths[3] is not None:
+                X_val = np.load(paths[2])
+                y_val = np.load(paths[3])
+            else:
+                # No validation split provided — carve one out of the train set.
+                split = int(len(x_train) * 0.8)
+                x_val, X_train_split = x_train[split:], x_train[:split]
+                y_val, y_train_split = y_train[split:], y_train[:split]
+                x_train, y_train = X_train_split, y_train_split
+                print("No validation split found — carved 20% from the training set.")
+
+            X_test = np.load(paths[4])
+            y_test = np.load(paths[5])
+
+            print(f"Loaded {label} from {DATA_DIR}")
+            return x_train, y_train, X_val, y_val, X_test, y_test
+
         raise FileNotFoundError(f"No compatible processed datasets found in {DATA_DIR}")
 
     X_train, y_train, X_val, y_val, X_test, y_test = load_processed()
