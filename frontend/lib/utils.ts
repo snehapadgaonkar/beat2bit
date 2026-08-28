@@ -159,7 +159,9 @@ export function params(value: number): string {
 export function flops(value: number): string {
   if (value == null || Number.isNaN(value)) return '—';
   const g = value / 1e9;
-  if (g >= 0.001) return `${g.toFixed(2)} GFLOPs`;
+  // Only use GFLOPs when the value won't round to "0.00" at 2 decimals
+  // (e.g. 2.84 MFLOPs = 0.00284 GFLOPs would show as "0.00 GFLOPs" — misleading)
+  if (g >= 0.01) return `${g.toFixed(2)} GFLOPs`;
   const m = value / 1e6;
   if (m >= 0.1) return `${m.toFixed(2)} MFLOPs`;
   return `${Math.round(value).toLocaleString('en-US')} FLOPs`;
