@@ -9,14 +9,17 @@ import numpy as np
 import os
 import tensorflow_model_optimization as tfmot
 
+# Project root (parent of this script's directory) so paths resolve from any cwd.
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # %% [markdown]
 # ### 1. Load the Dataset and Baseline Model
 # %%
-X_train = np.load('../data/processed/X_train.npy')
-X_test = np.load('../data/processed/X_test.npy')
-y_test = np.load('../data/processed/y_test.npy')
+X_train = np.load(os.path.join(PROJECT_ROOT, 'data', 'processed', 'X_train.npy'))
+X_test = np.load(os.path.join(PROJECT_ROOT, 'data', 'processed', 'X_test.npy'))
+y_test = np.load(os.path.join(PROJECT_ROOT, 'data', 'processed', 'y_test.npy'))
 
-model_path = '../models/baseline_cnn.keras'
+model_path = os.path.join(PROJECT_ROOT, 'models', 'baseline_cnn.keras')
 baseline_model = tf.keras.models.load_model(model_path)
 fp32_size = os.path.getsize(model_path)
 print(f"Loaded Baseline FP32 Model. Size: {fp32_size / 1024:.2f} KB")
@@ -80,7 +83,7 @@ converter.inference_output_type = tf.int8
 
 tflite_model_quant = converter.convert()
 
-quantized_model_path = '../models/model_pruned_quantized.tflite'
+quantized_model_path = os.path.join(PROJECT_ROOT, 'models', 'model_pruned_quantized.tflite')
 with open(quantized_model_path, 'wb') as f:
     f.write(tflite_model_quant)
 

@@ -10,6 +10,9 @@ import os
 import collections
 import urllib.request
 
+# Project root (parent of this script's directory) so paths resolve from any cwd.
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # %% [markdown]
 # ### 1. Define the AAMI Patient Split and Labels
 # To prevent data leakage, we divide patients into DS1 (Train) and DS2 (Test).
@@ -99,9 +102,9 @@ def extract_windows(records, data_dir):
 # to fit a 1D CNN (Samples, TimeSteps, Channels).
 
 # %%
-data_dir = '../data/mitdb'
+data_dir = os.path.join(PROJECT_ROOT, 'data', 'mitdb')
 os.makedirs(data_dir, exist_ok=True)
-processed_dir = '../data/processed'
+processed_dir = os.path.join(PROJECT_ROOT, 'data', 'processed')
 os.makedirs(processed_dir, exist_ok=True)
 
 print("--- Extracting Training Data (DS1) ---")

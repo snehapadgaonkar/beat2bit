@@ -13,13 +13,16 @@ import numpy as np
 import os
 import pandas as pd
 
+# Project root (parent of this script's directory) so paths resolve from any cwd.
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # %% [markdown]
 # ### 1. Downloading Data
 # We download just record '100' initially to understand the data format.
 # MIT-BIH records are composed of .dat (signals), .hea (headers), and .atr (annotations).
 
 # %%
-data_dir = '../data/mitdb'
+data_dir = os.path.join(PROJECT_ROOT, 'data', 'mitdb')
 os.makedirs(data_dir, exist_ok=True)
 print("Downloading MIT-BIH record 100...")
 wfdb.dl_database('mitdb', dl_dir=data_dir, records=['100', '119'])

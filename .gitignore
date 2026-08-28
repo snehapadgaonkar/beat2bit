@@ -18,9 +18,19 @@ dist/
 # Data and model artifacts
 data/
 models/saved/
+/experiments/
 *.h5
+*.hdf5
+*.keras
 *.tflite
 *.tflite.*
+
+# Generated training & benchmarking artifacts
+checkpoints/
+logs/
+*.tfevents
+*.tfevents.*
+*.zip
 
 # OS
 .DS_Store
@@ -46,3 +56,6 @@ firmware/*.hex
 data/
 node_modules/
 .next/
+
+# temporary CI fix backup (workflows permission pending)
+.ci_fix_backup/

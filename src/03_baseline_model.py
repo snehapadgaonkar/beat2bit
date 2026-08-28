@@ -10,14 +10,17 @@ from sklearn.metrics import classification_report
 import os
 import time
 
+# Project root (parent of this script's directory) so paths resolve from any cwd.
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # %% [markdown]
 # ### 1. Load the Preprocessed Dataset
 # %%
 print("Loading preprocessed dataset...")
-X_train = np.load('../data/processed/X_train.npy')
-y_train = np.load('../data/processed/y_train.npy')
-X_test = np.load('../data/processed/X_test.npy')
-y_test = np.load('../data/processed/y_test.npy')
+X_train = np.load(os.path.join(PROJECT_ROOT, 'data', 'processed', 'X_train.npy'))
+y_train = np.load(os.path.join(PROJECT_ROOT, 'data', 'processed', 'y_train.npy'))
+X_test = np.load(os.path.join(PROJECT_ROOT, 'data', 'processed', 'X_test.npy'))
+y_test = np.load(os.path.join(PROJECT_ROOT, 'data', 'processed', 'y_test.npy'))
 
 print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"X_test: {X_test.shape}, y_test: {y_test.shape}")
@@ -71,7 +74,7 @@ y_pred = (y_pred_prob > 0.5).astype(int)
 print("\nClassification Report:")
 print(classification_report(y_test, y_pred, target_names=['Normal (0)', 'Abnormal (1)']))
 
-os.makedirs('../models', exist_ok=True)
-model_path = '../models/baseline_cnn.keras'
+os.makedirs(os.path.join(PROJECT_ROOT, 'models'), exist_ok=True)
+model_path = os.path.join(PROJECT_ROOT, 'models', 'baseline_cnn.keras')
 model.save(model_path)
 print(f"\nBaseline Model Size: {os.path.getsize(model_path) / 1024:.2f} KB")

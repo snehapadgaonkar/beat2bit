@@ -1,8 +1,18 @@
-wfdb
+# Beat2Bit Python dependencies
+# Core scientific / ML stack (mirrors environment.yml)
 numpy
-matplotlib
 scipy
 pandas
-streamlit
-plotly
+matplotlib
+scikit-learn
+
+# Deep Learning & model optimization
+tensorflow
+tensorflow-model-optimization
+
+# Signal / data handling
+wfdb
+pyyaml
+
+# Notebook support
 jupytext
