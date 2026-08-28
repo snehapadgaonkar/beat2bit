@@ -1,10 +1,15 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
+/**
+ * Strongly-typed shape of a benchmark report as emitted by the backend
+ * `report_generator.py`. Every field mirrors the JSON written by
+ * `src/benchmarking/report_generator.py`.
+ */
 export interface ReportData {
   metadata: {
     model_name: string;
@@ -109,3 +114,71 @@ export interface ReportData {
   };
   recommendations: string[];
 }
+
+/* ------------------------------------------------------------------ */
+/* Formatting helpers                                                  */
+/* ------------------------------------------------------------------ */
+
+/** Format a 0–1 ratio as a percentage string (e.g. 0.87 -> "87.0%"). */
+export function pct(value: number, digits = 1): string {
+  if (Number.isNaN(value) || value == null) return '—';
+  return `${(value * 100).toFixed(digits)}%`;
+}
+
+/** Format milliseconds, adapting the decimals to the magnitude. */
+export function ms(value: number): string {
+  if (value == null || Number.isNaN(value)) return '—';
+  if (value >= 100) return `${value.toFixed(0)} ms`;
+  if (value >= 10) return `${value.toFixed(1)} ms`;
+  return `${value.toFixed(2)} ms`;
+}
+
+/** Format a byte-count in megabytes with adaptive precision. */
+export function mb(value: number): string {
+  if (value == null || Number.isNaN(value)) return '—';
+  if (value >= 1) return `${value.toFixed(2)} MB`;
+  if (value >= 0.1) return `${value.toFixed(2)} MB`;
+  return `${(value * 1024).toFixed(0)} KB`;
+}
+
+/** Format a large integer with thousands separators. */
+export function int(value: number): string {
+  if (value == null || Number.isNaN(value)) return '—';
+  return value.toLocaleString('en-US');
+}
+
+/** Format a possibly-fractional count of parameters. */
+export function params(value: number): string {
+  if (value == null || Number.isNaN(value)) return '—';
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toFixed(0);
+}
+
+/** Format a FLOP count into GFLOPS / MFLOPS / raw. */
+export function flops(value: number): string {
+  if (value == null || Number.isNaN(value)) return '—';
+  const g = value / 1e9;
+  if (g >= 0.001) return `${g.toFixed(2)} GFLOPs`;
+  const m = value / 1e6;
+  if (m >= 0.1) return `${m.toFixed(2)} MFLOPs`;
+  return `${Math.round(value).toLocaleString('en-US')} FLOPs`;
+}
+
+/** Compact latency percentile labels for charts. */
+export const LATENCY_STAT_KEYS: Array<{ key: keyof import('./utils').ReportData['latency_benchmarking']['latency_stats'][string]; label: string; color: string }> = [
+  { key: 'min_latency_ms', label: 'min', color: '#94a3b8' },
+  { key: 'p95_latency_ms', label: 'p50 / mean', color: '#0ea5e9' },
+  { key: 'mean_latency_ms', label: 'mean', color: '#e11d48' },
+  { key: 'p95_latency_ms', label: 'p95', color: '#f59e0b' },
+  { key: 'p99_latency_ms', label: 'p99', color: '#8b5cf6' },
+  { key: 'max_latency_ms', label: 'max', color: '#64748b' },
+];
+
+export const MODEL_COLORS = {
+  baseline_model: '#64748b',
+  quantized_int8: '#e11d48',
+  pruned_model_50: '#f59e0b',
+  pruned_model_70: '#8b5cf6',
+  pruned_quantized: '#10b981',
+};
