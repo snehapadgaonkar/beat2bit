@@ -168,7 +168,7 @@ class TestNoiseRobustness(unittest.TestCase):
         wander_amplitudes = [0.1, 0.3, 0.5, 0.8]
 
         for amplitude in wander_amplitudes:
-            with self.subtest(wander_amplitude=amplitude):
+            with self.subTest(wander_amplitude=amplitude):
                 # Apply baseline wander
                 X_test_wander = np.array([
                     add_baseline_wander(signal.flatten(), amplitude=amplitude)
@@ -193,7 +193,7 @@ class TestNoiseRobustness(unittest.TestCase):
         artifact_amplitudes = [0.1, 0.2, 0.4, 0.6]
 
         for amplitude in artifact_amplitudes:
-            with self.subtest(muscle_amplitude=amplitude):
+            with self.subTest(muscle_amplitude=amplitude):
                 # Apply muscle artifact
                 X_test_muscle = np.array([
                     add_muscle_artifact(signal.flatten(), amplitude=amplitude)
@@ -217,7 +217,7 @@ class TestNoiseRobustness(unittest.TestCase):
         motion_amplitudes = [0.05, 0.1, 0.2, 0.3]
 
         for amplitude in motion_amplitudes:
-            with self.subtest(motion_amplitude=amplitude):
+            with self.subTest(motion_amplitude=amplitude):
                 # Apply electrode motion
                 X_test_motion = np.array([
                     add_electrode_motion(signal.flatten(), amplitude=amplitude)
@@ -241,7 +241,7 @@ class TestNoiseRobustness(unittest.TestCase):
         snr_levels = [30, 20, 15, 10, 5]  # dB
 
         for snr_db in snr_levels:
-            with self.subtest(snr_db=snr_db):
+            with self.subTest(snr_db=snr_db):
                 # Apply white noise
                 X_test_noisy = np.array([
                     add_white_noise(signal.flatten(), snr_db=snr_db)

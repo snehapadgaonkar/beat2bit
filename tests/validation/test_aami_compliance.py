@@ -16,6 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.benchmarking.model_evaluator import (
     calculate_binary_classification_metrics,
     calculate_ami_metrics,
+    calculate_optimal_threshold,
     evaluate_model_predictions
 )
 
@@ -30,9 +31,9 @@ class TestAMICompliance(unittest.TestCase):
         self.y_pred = np.array([0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0])
 
         # Calculate expected values manually for verification
-        # TN: 4, FP: 2, FN: 2, TP: 4
-        self.expected_tn = 4
-        self.expected_fp = 2
+        # Confusion matrix for these arrays is TN: 5, FP: 1, FN: 2, TP: 4.
+        self.expected_tn = 5
+        self.expected_fp = 1
         self.expected_fn = 2
         self.expected_tp = 4
 
@@ -52,7 +53,7 @@ class TestAMICompliance(unittest.TestCase):
         expected_sensitivity = self.expected_tp / (self.expected_tp + self.expected_fn)
 
         self.assertAlmostEqual(metrics['ami_sensitivity'], expected_sensitivity, places=4)
-        self.assertEqual(metrics['ami_sensitivity'], 0.6667)  # 4/(4+2)
+        self.assertAlmostEqual(metrics['ami_sensitivity'], 4 / 6, places=4)  # 4/(4+2)
 
     def test_ami_positive_predictivity_calculation(self):
         """Test AMI positive predictivity (+P) calculation: TP / (TP + FP)"""
@@ -60,7 +61,7 @@ class TestAMICompliance(unittest.TestCase):
         expected_ppv = self.expected_tp / (self.expected_tp + self.expected_fp)
 
         self.assertAlmostEqual(metrics['ami_positive_predictivity'], expected_ppv, places=4)
-        self.assertEqual(metrics['ami_positive_predictivity'], 0.6667)  # 4/(4+2)
+        self.assertAlmostEqual(metrics['ami_positive_predictivity'], 4 / 5, places=4)  # 4/(4+1)
 
     def test_ami_effectiveness_calculation(self):
         """Test AMI effectiveness (E) calculation: sqrt(Se * +P)"""
@@ -70,7 +71,7 @@ class TestAMICompliance(unittest.TestCase):
         expected_effectiveness = np.sqrt(se * ppv)
 
         self.assertAlmostEqual(metrics['ami_effectiveness'], expected_effectiveness, places=4)
-        self.assertEqual(metrics['ami_effectiveness'], 0.6667)  # sqrt(0.6667 * 0.6667)
+        self.assertAlmostEqual(metrics['ami_effectiveness'], np.sqrt(4 / 6 * 4 / 5), places=4)  # sqrt(Se * +P)
 
     def test_binary_classification_metrics(self):
         """Test standard binary classification metrics."""
@@ -123,12 +124,15 @@ class TestAMICompliance(unittest.TestCase):
 
         optimal_threshold, optimal_metrics = calculate_optimal_threshold(y_true, y_pred_prob)
 
-        # Optimal threshold should be between 0.3 and 0.7
+        # The data is perfectly separable, so any threshold between 0.3 and 0.7
+        # yields sensitivity = specificity = 1. The algorithm returns the first
+        # threshold that maximizes Youden's J (0.7 for this ordering).
         self.assertGreaterEqual(optimal_threshold, 0.3)
         self.assertLessEqual(optimal_threshold, 0.7)
 
-        # With this data, threshold of 0.5 should be optimal
-        self.assertAlmostEqual(optimal_threshold, 0.5, places=1)
+        # At the optimal threshold the classification must be perfect.
+        self.assertEqual(optimal_metrics['ami_sensitivity'], 1.0)
+        self.assertEqual(optimal_metrics['specificity'], 1.0)
 
     def test_edge_cases(self):
         """Test edge cases like all positive or all negative predictions."""
