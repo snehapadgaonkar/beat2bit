@@ -25,12 +25,13 @@ interface Props {
 export function OverviewSection({ reports, loading, onNavigate }: Props) {
   const find = (name: string) => reports.find((r) => r.metadata.model_name === name);
   const baseline = find('baseline_model');
-  const final = find('pruned_quantized');
+  // INT8 quantized is the AAMI-compliant deployed model (Se=75%, +P=71.2%)
+  const final = find('quantized_int8') ?? find('pruned_quantized');
 
-  const accuracy = baseline?.model_evaluation.accuracy ?? 0.87;
-  const finalLatency = final?.summary.latency_performance.single_sample_latency_ms ?? 0.92;
-  const finalSize = final?.complexity_analysis.memory_size.int8_mb ?? 0.004;
-  const compression = baseline?.complexity_analysis.memory_size.compression_ratio_fp32_to_int8 ?? 3.92;
+  const accuracy = baseline?.model_evaluation.accuracy ?? 0.9383;
+  const finalLatency = final?.summary.latency_performance.single_sample_latency_ms ?? 0.073;
+  const finalSize = final?.complexity_analysis.memory_size.int8_mb ?? 0.0338;
+  const compression = final?.complexity_analysis.memory_size.compression_ratio_fp32_to_int8 ?? 2.59;
 
   const heroStats = [
     { label: 'Classification Accuracy', value: pct(accuracy), sub: 'AAMI patient independent', icon: TargetIcon },
