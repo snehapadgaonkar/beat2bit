@@ -39,7 +39,7 @@ export function DatasetsSection({ reports }: Props) {
   return (
     <div className="space-y-10 pb-12 sm:space-y-14 sm:pb-16">
       {/* ── Intro ────────────────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-3xl text-center">
+      <div className="w-full text-center">
         <p className="text-sm font-semibold uppercase tracking-wider text-rose-500">Training corpora</p>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl sm:text-4xl">
           Trained on the world&apos;s data
@@ -51,7 +51,7 @@ export function DatasetsSection({ reports }: Props) {
       </div>
 
       {/* ── Spec strip ───────────────────────────────────────────────────────── */}
-      <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs text-slate-600 shadow-sm sm:gap-x-8 sm:px-6 sm:text-sm">
+      <div className="w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs text-slate-600 shadow-sm sm:gap-x-8 sm:px-6 sm:text-sm">
         <span className="inline-flex items-center gap-2">
           <BadgeCheck className="h-4 w-4 text-emerald-500" /> {primary?.dataset_info.dataset ?? 'MIT-BIH Arrhythmia'}
         </span>
