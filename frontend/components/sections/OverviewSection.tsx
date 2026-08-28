@@ -110,7 +110,7 @@ export function OverviewSection({ reports, loading, onNavigate }: Props) {
       </section>
 
       {/* ── Value props ───────────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         <div className="mb-10 max-w-2xl sm:mb-12">
           <p className="text-sm font-semibold uppercase tracking-wider text-rose-500">Why Beat2Bit</p>
           <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -123,7 +123,7 @@ export function OverviewSection({ reports, loading, onNavigate }: Props) {
         </div>
 
         {/* Feature cards — 1 col → 3 col */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 w-full">
           {[
             {
               icon: WifiOff,
@@ -159,7 +159,7 @@ export function OverviewSection({ reports, loading, onNavigate }: Props) {
       </section>
 
       {/* ── Pathologies ───────────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         <div className="mb-10 max-w-2xl sm:mb-12">
           <p className="text-sm font-semibold uppercase tracking-wider text-rose-500">Pathologies detected</p>
           <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -168,7 +168,7 @@ export function OverviewSection({ reports, loading, onNavigate }: Props) {
         </div>
 
         {/* 2 col on mobile → 4 col on lg */}
-        <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4 w-full">
           {[
             { name: 'Normal Sinus Rhythm', code: 'N', desc: 'Regular 60–100 bpm P-QRS-T sequence.', color: 'text-slate-600', bg: 'bg-slate-100' },
             { name: 'PVC', code: 'V', desc: 'Premature ventricular contractions — wide, bizarre QRS.', color: 'text-rose-500', bg: 'bg-rose-50' },

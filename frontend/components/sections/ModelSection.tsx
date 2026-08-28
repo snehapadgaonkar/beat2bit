@@ -66,7 +66,7 @@ export function ModelSection({ reports }: Props) {
   return (
     <div className="space-y-10 pb-12 sm:space-y-14 sm:pb-16">
       {/* ── Intro ────────────────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-3xl text-center">
+      <div className="w-full text-center">
         <p className="text-sm font-semibold uppercase tracking-wider text-rose-500">From Python to silicon</p>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl sm:text-4xl">
           The Beat2Bit pipeline
@@ -85,7 +85,7 @@ export function ModelSection({ reports }: Props) {
       </div>
 
       {/* ── Vertical timeline ────────────────────────────────────────────────── */}
-      <div className="relative mx-auto max-w-4xl">
+      <div className="relative w-full mx-auto">
         {/* Connector line — hidden on very small screens to avoid overlap */}
         <div className="absolute bottom-0 left-5 top-0 hidden w-px bg-gradient-to-b from-blue-200 via-purple-200 to-emerald-200 sm:block sm:left-6" />
         <div className="space-y-5 sm:space-y-8">
