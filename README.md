@@ -56,7 +56,6 @@ The frontend is a modern Next.js 14 application. To run it on your local machine
    ```bash
    git clone https://github.com/snehapadgaonkar/beat2bit.git
    cd beat2bit
-   git checkout arena/01a03cc6-beat2bit
    ```
 
 2. **Navigate to the frontend directory:**
