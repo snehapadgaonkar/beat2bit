@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "model_name": "pruned_model_50",
+    "timestamp": "2026-08-27T10:30:00.000Z",
+    "report_version": "1.0.0",
+    "generator": "Beat2Bit Benchmarking Suite"
+  },
+  "dataset_info": {
+    "dataset": "MIT-BIH Arrhythmia Database",
+    "samples": 2000,
+    "features": 180,
+    "classes": [
+      "Normal",
+      "Abnormal"
+    ],
+    "split": "Patient-independent AAMI"
+  },
+  "model_evaluation": {
+    "accuracy": 0.85,
+    "precision": 0.83,
+    "recall": 0.87,
+    "f1_score": 0.85,
+    "ami_sensitivity": 0.87,
+    "ami_positive_predictivity": 0.82,
+    "ami_effectiveness": 0.84,
+    "specificity": 0.84,
+    "confusion_matrix": {
+      "tn": 840,
+      "fp": 160,
+      "fn": 130,
+      "tp": 870
+    }
+  },
+  "complexity_analysis": {
+    "parameters": {
+      "total_parameters": 6225,
+      "trainable_parameters": 6225,
+      "non_trainable_parameters": 0
+    },
+    "memory_size": {
+      "fp32_mb": 0.024,
+      "int8_mb": 0.006,
+      "compression_ratio_fp32_to_int8": 4.0
+    },
+    "computational_complexity": {
+      "total_flops": 1420000,
+      "gflops": 0.00142,
+      "mflops": 1.42
+    }
+  },
+  "latency_benchmarking": {
+    "batch_sizes": [
+      1,
+      4,
+      8,
+      16
+    ],
+    "latency_stats": {
+      "batch_size_1": {
+        "mean_latency_ms": 1.85,
+        "median_latency_ms": 1.78,
+        "std_latency_ms": 0.25,
+        "min_latency_ms": 1.55,
+        "max_latency_ms": 2.45,
+        "p95_latency_ms": 2.18,
+        "p99_latency_ms": 2.35,
+        "n_measurements": 100
+      }
+    },
+    "throughput_stats": {
+      "batch_size_1": {
+        "throughput_samples_per_sec": 540.5,
+        "latency_per_sample_ms": 1.85
+      }
+    },
+    "summary": {
+      "optimal_batch_size_for_latency": 1,
+      "optimal_batch_size_for_throughput": 16,
+      "latency_range_ms": {
+        "min": 1.85,
+        "max": 5.80
+      },
+      "throughput_range_samples_per_sec": {
+        "min": 540.5,
+        "max": 1680.2
+      }
+    }
+  },
+  "summary": {
+    "model_performance": {
+      "accuracy": 0.85,
+      "f1_score": 0.85,
+      "ami_sensitivity": 0.87,
+      "ami_positive_predictivity": 0.82,
+      "ami_effectiveness": 0.84
+    },
+    "model_complexity": {
+      "total_parameters": 6225,
+      "model_size_fp32_mb": 0.024,
+      "model_size_int8_mb": 0.006,
+      "compression_ratio": 4.0,
+      "total_flops": 1420000,
+      "gflops": 0.00142
+    },
+    "latency_performance": {
+      "single_sample_latency_ms": 1.85,
+      "latency_p95_ms": 2.18,
+      "throughput_samples_per_sec": 540.5
+    }
+  },
+  "recommendations": [
+    "Model accuracy is good (85.00%). Consider fine-tuning to recover any accuracy loss from pruning.",
+    "Model has 6225 parameters (50% reduction), excellent for edge deployment.",
+    "Single-sample latency (1.85 ms) shows improvement from pruning."
+  ]
+}

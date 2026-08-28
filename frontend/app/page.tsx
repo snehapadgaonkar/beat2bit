@@ -1,27 +1,93 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { 
-  Activity, Cpu, Zap, LineChart, Database, ShieldAlert, Bot, 
-  Send, ArrowRight, ShieldCheck, BatteryCharging, WifiOff, 
+import {
+  Activity, Cpu, LineChart, Database, ShieldAlert, Bot,
+  Send, ArrowRight, ShieldCheck, BatteryCharging, WifiOff,
   HeartPulse, Menu, X, CheckCircle2
 } from 'lucide-react'
 import { ECGChart } from '@/components/ECGChart'
+import { getReportList, getReportByName, ReportData } from '@/lib/researchService'
 
 export default function Beat2BitWebsite() {
-  const [activeTab, setActiveTab] = useState('product')
+  const [activeTab, setActiveTab] = useState('research')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  
+
   const [chatMessages, setChatMessages] = useState([
     { role: 'agent', text: "Hi! I am the Beat2Bit AI assistant. Ask me anything about our ultra-low-power ECG detection model." }
   ])
   const [currentMessage, setCurrentMessage] = useState("")
   const chatEndRef = useRef<HTMLDivElement>(null)
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  // Research tab state
+  const [reportList, setReportList] = useState<Array<{ name: string; date: string; type: string }>>([])
+  const [fullReports, setFullReports] = useState<ReportData[]>([])
+  const [selectedReport, setSelectedReport] = useState<ReportData | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
+
+  // Load reports when component mounts or when research tab becomes active
+  useEffect(() => {
+    async function loadInitialReports() {
+      setLoading(true)
+      try {
+        const reportList = await getReportList()
+        setReportList(reportList)
+        // Load full report data for all reports
+        if (reportList.length > 0) {
+          const fullReports = await Promise.all(
+            reportList.map(report => getReportByName(report.name))
+          )
+          const filteredReports = fullReports.filter((report): report is ReportData => report !== null)
+          setFullReports(filteredReports)
+          // Load the first report by default if available
+          if (fullReports.length > 0) {
+            setSelectedReport(fullReports[0])
+          }
+        }
+      } catch (error) {
+        console.error('Error loading reports:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadInitialReports()
+  }, [])
+
+  // Reload reports when switching to research tab
+  useEffect(() => {
+    if (activeTab === 'research') {
+      const loadResearchData = async () => {
+        setLoading(true)
+        try {
+          const reportList = await getReportList()
+          setReportList(reportList)
+          // Load full report data for all reports
+          if (reportList.length > 0) {
+            const fullReports = await Promise.all(
+              reportList.map(report => getReportByName(report.name))
+            )
+            const filteredReports = fullReports.filter((report): report is ReportData => report !== null)
+            setFullReports(filteredReports)
+            // Load the first report by default if available
+            if (filteredReports.length > 0) {
+              setSelectedReport(filteredReports[0])
+            }
+          }
+        } catch (error) {
+          console.error('Error loading research data:', error)
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      loadResearchData()
+    }
+  }, [activeTab])
+
+const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentMessage.trim()) return
 
@@ -55,6 +121,7 @@ export default function Beat2BitWebsite() {
     { id: 'dashboard', label: 'Dashboard', icon: LineChart },
     { id: 'model', label: 'Model Pipeline', icon: Cpu },
     { id: 'agent', label: 'AI Agent', icon: Bot },
+    { id: 'research', label: 'Research', icon: Bot },
   ]
 
   const switchTab = (id: string) => {
@@ -216,7 +283,7 @@ export default function Beat2BitWebsite() {
           {activeTab === 'datasets' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto py-8">
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">Trained on the World's Data</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">Trained on the World&apos;s Data</h2>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">To ensure robust generalization across diverse demographics, Beat2Bit leverages three gold-standard clinical datasets.</p>
               </div>
 
@@ -262,7 +329,7 @@ export default function Beat2BitWebsite() {
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto py-8">
               <div className="mb-10 text-center">
                 <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">Pathologies Detected</h2>
-                <p className="text-lg text-slate-600">Beat2Bit's neural network performs highly accurate multi-class anomaly detection natively on-device.</p>
+                <p className="text-lg text-slate-600">Beat2Bit&apos;s neural network performs highly accurate multi-class anomaly detection natively on-device.</p>
               </div>
 
               <div className="space-y-6">
@@ -387,7 +454,7 @@ export default function Beat2BitWebsite() {
                     <CheckCircle2 className="h-5 w-5 text-rose-500" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 mb-2">4. TFLite Micro Deployment</h3>
-                  <p className="text-slate-600 leading-relaxed">The final optimized model is converted into a C byte array and flashed directly onto the microcontroller's ROM alongside the TensorFlow Lite for Microcontrollers inference engine.</p>
+                  <p className="text-slate-600 leading-relaxed">The final optimized model is converted into a C byte array and flashed directly onto the microcontroller&apos;s ROM alongside the TensorFlow Lite for Microcontrollers inference engine.</p>
                 </div>
 
               </div>
@@ -451,6 +518,183 @@ export default function Beat2BitWebsite() {
                   </form>
                 </div>
 
+              </div>
+            </div>
+          )}
+
+          {/* 7. RESEARCH TAB */}
+          {activeTab === 'research' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto py-8">
+              <div className="mb-10 text-center">
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">Research Details</h2>
+                <p className="text-lg text-slate-600">Comprehensive analysis of model performance, optimization trade-offs, and validation results.</p>
+              </div>
+
+              {/* Research Content */}
+              <div className="space-y-8">
+                {/* Model Optimization Trade-offs */}
+                <div className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-xl font-bold text-slate-900 mb-4">Model Optimization Trade-offs</h3>
+                  <p className="text-slate-600 mb-4">
+                    Analysis of how pruning and quantization affect model accuracy, size, and latency.
+                  </p>
+                  {!loading && fullReports.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Model
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Accuracy
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Latency (ms)
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Size (KB)
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              FLOPs (M)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {fullReports.map((report, index) => (
+                            <tr key={index} className="bg-white hover:bg-slate-50">
+                              <td className="px-6 py-4 text-sm font-medium text-slate-900">
+                                {report.metadata?.model_name?.replace(/_/g, ' ').toUpperCase() || 'Unknown'}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-slate-600">
+                                {(report.summary?.model_performance?.accuracy || 0) * 100}.toFixed(1)%
+                              </td>
+                              <td className="px-6 py-4 text-sm text-slate-600">
+                                {(report.latency_benchmarking?.latency_stats?.batch_size_1?.mean_latency_ms || 0).toFixed(1)}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-slate-600">
+                                {(report.complexity_analysis?.memory_size?.fp32_mb || 0) * 1024}.toFixed(0)
+                              </td>
+                              <td className="px-6 py-4 text-sm text-slate-600">
+                                {(report.complexity_analysis?.computational_complexity?.total_flops || 0) / 1000000}.toFixed(1)
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-slate-500">Loading report data...</p>
+                  )}
+                </div>
+
+                {/* Validation Results */}
+                <div className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-xl font-bold text-slate-900 mb-4">Validation Results</h3>
+                  <p className="text-slate-600 mb-4">
+                    AAMI EC57 compliant metrics and statistical significance testing.
+                  </p>
+                  {!loading && selectedReport ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-slate-500">Accuracy</p>
+                          <p className="font-medium">{selectedReport.model_evaluation.accuracy.toFixed(2) + '%'}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">F1 Score</p>
+                          <p className="font-medium">{selectedReport.model_evaluation.f1_score.toFixed(2) + '%'}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">AMI Sensitivity</p>
+                          <p className="font-medium">{selectedReport.model_evaluation.ami_sensitivity.toFixed(2) + '%'}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">AMI +P</p>
+                          <p className="font-medium">{selectedReport.model_evaluation.ami_positive_predictivity.toFixed(2) + '%'}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">AMI Effectiveness</p>
+                          <p className="font-medium">{selectedReport.model_evaluation.ami_effectiveness.toFixed(2) + '%'}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">Latency (ms)</p>
+                          <p className="font-medium">{selectedReport.latency_benchmarking.latency_stats.batch_size_1.mean_latency_ms.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">Model Size (KB)</p>
+                          <p className="font-medium">{(selectedReport.complexity_analysis.memory_size.fp32_mb * 1024).toFixed(0)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-4 bg-slate-50 rounded-md">
+                        <p className="text-slate-500">Confusion Matrix</p>
+                        <div className="mt-2">
+                          <table className="text-sm">
+                            <thead>
+                              <tr>
+                                <th></th>
+                                <th className="text-left">Predicted Negative</th>
+                                <th className="text-left">Predicted Positive</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <th className="text-left">Actual Negative</th>
+                                <td>{selectedReport.model_evaluation.confusion_matrix.tn}</td>
+                                <td>{selectedReport.model_evaluation.confusion_matrix.fp}</td>
+                              </tr>
+                              <tr>
+                                <th className="text-left">Actual Positive</th>
+                                <td>{selectedReport.model_evaluation.confusion_matrix.fn}</td>
+                                <td>{selectedReport.model_evaluation.confusion_matrix.tp}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-slate-500">Loading validation data...</p>
+                  )}
+                </div>
+
+                {/* Downloadable Reports */}
+                <div className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-xl font-bold text-slate-900 mb-4">Downloadable Reports</h3>
+                  <p className="text-slate-600 mb-4">
+                    Access detailed benchmarking reports and research documentation.
+                  </p>
+                  {!loading && reportList.length > 0 ? (
+                    <div className="space-y-3">
+                      {reportList.map((report, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-md">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-slate-200 p-2 rounded-md">
+                              <Activity className="w-4 h-4 text-slate-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-900">{report.name.replace(/_/g, ' ').toUpperCase()}</p>
+                              <p className="text-xs text-slate-500">{report.type} • {report.date}</p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-slate-600 hover:text-slate-900 border-slate-200"
+                            onClick={() => {
+                              // Simulate download - in a real app, this would trigger a download
+                              alert(`Downloading report for ${report.name}`);
+                            }}
+                          >
+                            Download
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-500">Loading report list...</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
