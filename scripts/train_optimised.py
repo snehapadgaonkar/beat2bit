@@ -679,7 +679,7 @@ def main():
         comp_ratio=(p50_n*4/1024**2)/p50_mb if p50_mb > 0 else 4.0,
         total_flops=int(flops_base*0.6), n_samples=n_test,
         recommendations=[
-            "50% pruning yields %.1f%% accuracy with %d parameters." % (
+            "50pct pruning yields %.1f pct accuracy with %d parameters." % (
              p50m["accuracy"]*100, p50_n),
             "Moderate compression — good balance of accuracy and size.",
             "Combine with hybrid INT8 for further size reduction.",
@@ -722,9 +722,8 @@ def main():
         comp_ratio=(p70_n*4/1024**2)/p70_mb if p70_mb > 0 else 4.0,
         total_flops=int(flops_base*0.35), n_samples=n_test,
         recommendations=[
-            "70% pruning achieves %.1f%% accuracy — aggressive but clinically usable." % (
-             p70m["accuracy"]*100),
-            "AAMI thresholds (Se>=75%%, +P>=70%%) cleared.",
+            "70pct pruning achieves " + ("%.1f" % (p70m["accuracy"]*100)) + "pct accuracy — aggressive but clinically usable.",
+            "AAMI thresholds (Se>=75pct, +P>=70pct) cleared.",
             "Combine with hybrid INT8 for the final deployable model.",
         ],
     ))
@@ -745,13 +744,9 @@ def main():
         comp_ratio=fp32_mb_base/f_mb if f_mb > 0 else 3.5,
         total_flops=int(flops_base*0.35), n_samples=n_test,
         recommendations=[
-            "Combined 70%% pruning + hybrid INT8: %.0f KB at %.3f ms/sample." % (
-             f_mb*1024, fl["mean"]),
-            "Accuracy %.1f%% vs baseline %.1f%% — %.1f pp difference." % (
-             fm["accuracy"]*100, bm["accuracy"]*100,
-             abs(bm["accuracy"]-fm["accuracy"])*100),
-            "Final footprint of %.0f KB fits in SRAM-constrained MCUs." % (
-             f_mb*1024),
+            "Combined 70pct pruning + hybrid INT8: " + ("%.0f" % (f_mb*1024)) + " KB at " + ("%.3f" % fl["mean"]) + " ms/sample.",
+            "Accuracy " + ("%.1f" % (fm["accuracy"]*100)) + "pct vs baseline " + ("%.1f" % (bm["accuracy"]*100)) + "pct.",
+            "Final footprint of " + ("%.0f" % (f_mb*1024)) + " KB fits in SRAM-constrained MCUs.",
         ],
     ))
 
