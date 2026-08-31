@@ -120,40 +120,6 @@ The INT8 hybrid quantization model is the recommended deployed model: **2.59× s
 
 ---
 
-## Repository Structure
-
-```text
-beat2bit/
-│
-├── frontend/                  # Next.js interactive dashboard
-│   ├── app/                   # App router, layout, globals
-│   ├── components/            # React components (ECG chart, sections, chat)
-│   ├── lib/                   # Utility functions, formatters
-│   └── public/reports/        # JSON benchmark reports (read by the UI)
-│
-├── scripts/
-│   └── train_optimised.py     # Full reproducible training pipeline v8
-│
-├── src/                       # Step-by-step ML source scripts
-│   ├── 02_preprocessing.py    # MIT-BIH windowing + AAMI split
-│   ├── 03_baseline_model.py   # FP32 1D-CNN training
-│   └── 04_quantization_pruning.py # Pruning + INT8 quantization
-│
-├── notebooks/                 # Colab-ready Jupyter notebooks
-├── configs/                   # YAML configs for each experiment
-├── docs/                      # Methodology and reproducibility guides
-├── tests/                     # pytest test suite
-│
-├── data/                      # (git-ignored) MIT-BIH + processed arrays
-├── models/                    # (git-ignored) saved .keras and .tflite files
-│
-├── CONTRIBUTING.md
-├── LICENSE
-└── requirements.txt
-```
-
----
-
 ## Roadmap
 
 ### v1.0.0 — Research baseline
