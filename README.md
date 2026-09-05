@@ -14,13 +14,13 @@ Beat2Bit investigates a core TinyML research question:
 
 **How much can an ECG arrhythmia detection neural network be compressed and optimised for edge deployment while maintaining clinically acceptable classification performance?**
 
-The result: a 1D convolutional network trained on the full MIT-BIH Arrhythmia Database, compressed to a 34.6 KB INT8 model that runs at **0.073 ms per beat** on a microcontroller — with no cloud dependency and full AAMI EC57 compliance.
+The result: a 1D convolutional network trained on the full MIT-BIH Arrhythmia Database, compressed to a 34.6 KB INT8 model that runs at **0.073 ms per beat** on a microcontroller, with no cloud dependency and full AAMI EC57 compliance.
 
 ---
 
 ## Getting Started
 
-Instructions for setting up the project locally — both the ML pipeline and the interactive web dashboard.
+Instructions for setting up the project locally i.e both the ML pipeline and the interactive web dashboard.
 
 ### Prerequisites
 
@@ -74,7 +74,7 @@ python src/03_baseline_model.py       # Train FP32 baseline
 python src/04_quantization_pruning.py # Prune + quantize
 ```
 
-**Run on Google Colab** (recommended — free GPU):
+**Run on Google Colab**:
 
 ```bash
 # In Colab:
